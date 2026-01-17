@@ -66,6 +66,22 @@ export default function CreateLobbyPage() {
           >
             {isCreating ? 'Creating...' : 'Create Lobby'}
           </button>
+          
+          <div className="relative">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gray-500">Or</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => router.push('/lobby/join')}
+            className="w-full py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition-colors"
+          >
+            Join Lobby
+          </button>
         </div>
       </div>
     );
