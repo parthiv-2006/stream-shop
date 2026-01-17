@@ -64,10 +64,16 @@ exports.createLobby = async (req, res, next) => {
  */
 exports.joinLobby = async (req, res, next) => {
   try {
-    const { code } = req.body;
+    let { code } = req.body;
     const userId = req.user?.userId;
 
-    if (!code || code.length !== 6) {
+    // Normalize code: convert to string, trim whitespace
+    if (typeof code === 'number') {
+      code = code.toString();
+    }
+    code = String(code).trim();
+
+    if (!code || code.length !== 6 || !/^\d{6}$/.test(code)) {
       return res.status(400).json({
         error: { message: 'Valid 6-digit lobby code is required' },
       });

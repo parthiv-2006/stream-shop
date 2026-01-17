@@ -1,18 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const {
-  getRegistrationOptions,
-  verifyRegistration,
-  getAuthenticationOptions,
-  verifyAuthentication,
+  register,
+  login,
 } = require('../controllers/auth.controller');
 
-// Passkey registration endpoints
-router.post('/passkey/register-options', getRegistrationOptions);
-router.post('/passkey/register-verify', verifyRegistration);
-
-// Passkey authentication endpoints
-router.post('/passkey/auth-options', getAuthenticationOptions);
-router.post('/passkey/auth-verify', verifyAuthentication);
+// Password-based authentication endpoints
+router.post('/register', register);
+router.post('/login', login);
 
 module.exports = router;

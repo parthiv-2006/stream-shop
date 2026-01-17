@@ -1,16 +1,16 @@
 import { useAuthStore } from '@/store/authStore';
-import { registerPasskey, authenticatePasskey } from '@/lib/auth/passkey';
+import { registerWithPassword, loginWithPassword } from '@/lib/auth/password';
 import { useRouter } from 'next/navigation';
 
 export function useAuth() {
   const { user, token, isGuest, isLoading, error, setUser, setToken, setGuest, setLoading, setError, logout } = useAuthStore();
   const router = useRouter();
 
-  const register = async (username) => {
+  const register = async (username, password, confirmPassword) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await registerPasskey(username);
+      const result = await registerWithPassword(username, password, confirmPassword);
       setUser({ username, id: result.userId });
       setToken(result.token);
       router.push('/onboarding');
@@ -21,11 +21,11 @@ export function useAuth() {
     }
   };
 
-  const login = async (username) => {
+  const login = async (username, password) => {
     setLoading(true);
     setError(null);
     try {
-      const result = await authenticatePasskey(username);
+      const result = await loginWithPassword(username, password);
       setUser({ username, id: result.userId });
       setToken(result.token);
       router.push('/lobby/create');

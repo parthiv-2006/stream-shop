@@ -7,10 +7,10 @@ const userSchema = new mongoose.Schema({
     unique: true,
     trim: true,
   },
-  passkey_id: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Passkey',
-    default: null,
+  password: {
+    type: String,
+    required: false, // Optional for guest users
+    select: false, // Don't return password by default
   },
   preferences: {
     spice_level: {

@@ -5,20 +5,14 @@ import { useState, useEffect } from 'react';
 import { LobbyCode } from '@/components/lobby/LobbyCode';
 import { lobbyApi } from '@/lib/api/lobby';
 import toast from 'react-hot-toast';
-import { useAuth } from '@/lib/hooks/useAuth';
+import { useAuthStore } from '@/store/authStore';
 
 export default function JoinLobbyPage() {
   const params = useParams();
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const token = useAuthStore((state) => state.token);
   const [isJoining, setIsJoining] = useState(false);
   const lobbyCode = params.lobbyId;
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      router.push('/');
-    }
-  }, [isAuthenticated, router]);
 
   const handleJoin = async (code) => {
     if (code.length !== 6) {
@@ -30,7 +24,14 @@ export default function JoinLobbyPage() {
     try {
       const result = await lobbyApi.join(code);
       toast.success('Joined lobby successfully!');
-      router.push(`/lobby/${result.lobbyId || code}/room`);
+      // Use the lobbyId from the response, or fall back to the code if needed
+      const lobbyId = result.lobbyId || result.id;
+      if (lobbyId) {
+        router.push(`/lobby/${lobbyId}/room`);
+      } else {
+        // If no lobbyId, try to find lobby by code and get its ID
+        toast.error('Failed to get lobby ID. Please try again.');
+      }
     } catch (error) {
       toast.error(error.message || 'Failed to join lobby. Please check the code and try again.');
       console.error('Join lobby error:', error);
@@ -38,10 +39,6 @@ export default function JoinLobbyPage() {
       setIsJoining(false);
     }
   };
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
