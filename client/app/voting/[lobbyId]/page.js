@@ -120,6 +120,7 @@ export default function VotingPage() {
           restaurant_id: winner.id,
           restaurant_name: winner.name,
           restaurant_cuisine: winner.cuisine,
+          restaurant_image: winner.image || winner.imageUrl,
           lobby_id: lobbyId,
         }).catch(err => console.error('Failed to record visit:', err));
       }

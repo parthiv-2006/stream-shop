@@ -6,6 +6,7 @@ import { useAuth } from '@/lib/hooks/useAuth';
 import { userApi } from '@/lib/api/user';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
+import { FeedbackForm, FeedbackPrompt } from '@/components/feedback/FeedbackForm';
 
 const SPICE_LEVELS = [
   { value: 'none', label: 'No Spice', icon: '🍚', color: 'from-gray-400 to-gray-500' },
@@ -49,11 +50,17 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [isEditingPrefs, setIsEditingPrefs] = useState(false);
   const [editedPrefs, setEditedPrefs] = useState(null);
-  const [activeTab, setActiveTab] = useState('home');
+  const [feedbackVisit, setFeedbackVisit] = useState(null);
 
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: userApi.getProfile,
+    enabled: hasHydrated && isAuthenticated,
+  });
+
+  const { data: pendingFeedback } = useQuery({
+    queryKey: ['pendingFeedback'],
+    queryFn: userApi.getPendingFeedback,
     enabled: hasHydrated && isAuthenticated,
   });
 
@@ -65,6 +72,17 @@ export default function DashboardPage() {
       setIsEditingPrefs(false);
     },
     onError: (error) => toast.error(error.message || 'Failed to update preferences'),
+  });
+
+  const feedbackMutation = useMutation({
+    mutationFn: ({ visitId, feedback }) => userApi.submitFeedback(visitId, feedback),
+    onSuccess: () => {
+      toast.success('Thanks for your feedback!');
+      queryClient.invalidateQueries(['profile']);
+      queryClient.invalidateQueries(['pendingFeedback']);
+      setFeedbackVisit(null);
+    },
+    onError: (error) => toast.error(error.message || 'Failed to submit feedback'),
   });
 
   useEffect(() => {
@@ -94,9 +112,25 @@ export default function DashboardPage() {
 
   if (!isAuthenticated) return null;
 
+  const pendingCount = pendingFeedback?.count || 0;
+
   return (
     <div className="min-h-screen bg-animated-gradient text-white relative overflow-hidden">
       <Particles />
+      
+      {/* Feedback Modal */}
+      {feedbackVisit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <FeedbackForm
+              visit={feedbackVisit}
+              onSubmit={(feedback) => feedbackMutation.mutate({ visitId: feedbackVisit.id, feedback })}
+              onCancel={() => setFeedbackVisit(null)}
+              isSubmitting={feedbackMutation.isPending}
+            />
+          </div>
+        </div>
+      )}
       
       {/* Header */}
       <header className="relative z-10 border-b border-white/10">
@@ -129,6 +163,33 @@ export default function DashboardPage() {
       </header>
 
       <main className="relative z-10 max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Pending Feedback Banner */}
+        {pendingCount > 0 && (
+          <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#ff6b35]/20 to-[#f72585]/20 border border-[#ff6b35]/30 p-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#ff6b35] to-[#f72585] flex items-center justify-center text-2xl animate-pulse">
+                  ⭐
+                </div>
+                <div>
+                  <h3 className="font-semibold text-white">
+                    {pendingCount} {pendingCount === 1 ? 'restaurant' : 'restaurants'} awaiting your review
+                  </h3>
+                  <p className="text-white/50 text-sm">Help us learn your preferences!</p>
+                </div>
+              </div>
+              {pendingFeedback?.visits?.[0] && (
+                <button
+                  onClick={() => setFeedbackVisit(pendingFeedback.visits[0])}
+                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#ff6b35] to-[#f72585] text-white font-medium hover:opacity-90 transition-all"
+                >
+                  Leave Feedback
+                </button>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Hero Section */}
         <section className="relative overflow-hidden rounded-3xl glass-card p-8 md:p-12">
           <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#ff6b35]/30 to-transparent rounded-full blur-3xl"></div>
@@ -187,6 +248,31 @@ export default function DashboardPage() {
             </div>
           ))}
         </section>
+
+        {/* Pending Feedback Section */}
+        {pendingCount > 0 && (
+          <section className="glass-card rounded-3xl p-6 md:p-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff6b35] to-[#f72585] flex items-center justify-center text-xl">
+                ⭐
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-white">Share Your Experience</h2>
+                <p className="text-white/50 text-sm">How was your meal? Your feedback helps improve recommendations.</p>
+              </div>
+            </div>
+            
+            <div className="space-y-3">
+              {pendingFeedback?.visits?.map((visit) => (
+                <FeedbackPrompt
+                  key={visit.id}
+                  visit={visit}
+                  onClick={() => setFeedbackVisit(visit)}
+                />
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* Preferences Section */}
         <section className="glass-card rounded-3xl p-6 md:p-8">
@@ -348,8 +434,9 @@ export default function DashboardPage() {
               {profile.visits.map((visit, idx) => (
                 <div 
                   key={visit.id}
-                  className="group flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff6b35]/50 hover:bg-white/10 transition-all"
+                  className="group flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff6b35]/50 hover:bg-white/10 transition-all cursor-pointer"
                   style={{ animationDelay: `${idx * 100}ms` }}
+                  onClick={() => !visit.feedback_completed && setFeedbackVisit(visit)}
                 >
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#ff6b35] to-[#f72585] flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     🍜
@@ -357,11 +444,28 @@ export default function DashboardPage() {
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-white truncate">{visit.restaurant_name}</h3>
                     <p className="text-white/50 text-sm">{visit.restaurant_cuisine}</p>
+                    {visit.would_return !== undefined && (
+                      <div className="flex items-center gap-2 mt-1">
+                        {visit.would_return ? (
+                          <span className="text-xs text-green-400 flex items-center gap-1">
+                            <span>👍</span> Would return
+                          </span>
+                        ) : (
+                          <span className="text-xs text-red-400 flex items-center gap-1">
+                            <span>👎</span> Once was enough
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  {visit.rating && (
+                  {visit.rating ? (
                     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#ffd60a]/20 to-[#ff6b35]/20 border border-[#ffd60a]/30">
                       <span>⭐</span>
                       <span className="text-[#ffd60a] font-semibold">{visit.rating}</span>
+                    </div>
+                  ) : (
+                    <div className="px-3 py-1.5 rounded-full bg-[#ff6b35]/20 border border-[#ff6b35]/30 text-[#ff6b35] text-xs font-medium">
+                      Rate
                     </div>
                   )}
                   <div className="text-white/30 text-sm hidden sm:block">
