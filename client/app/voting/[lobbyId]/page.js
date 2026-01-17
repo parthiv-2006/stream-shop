@@ -143,10 +143,10 @@ export default function VotingPage() {
 
             <div className="flex gap-4 justify-center">
               <button
-                onClick={() => router.push(`/lobby/${lobbyId}/room`)}
+                onClick={() => router.push('/lobby/create')}
                 className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold transition-colors"
               >
-                Back to Lobby
+                Back to Home
               </button>
             </div>
           </div>
@@ -236,10 +236,10 @@ export default function VotingPage() {
               This might happen if no one swiped right on the same restaurants.
             </p>
             <button
-              onClick={() => router.push(`/lobby/${lobbyId}/room`)}
+              onClick={() => router.push('/lobby/create')}
               className="mt-4 px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
             >
-              Back to Lobby
+              Back to Home
             </button>
           </div>
         )}

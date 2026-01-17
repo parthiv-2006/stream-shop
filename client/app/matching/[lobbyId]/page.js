@@ -115,13 +115,9 @@ export default function MatchingPage() {
   };
 
   const handleEmpty = () => {
-    // User has swiped all restaurants
-    if (!userDone) {
-      setUserDone(true);
-      toast.success('You\'ve swiped all restaurants! Waiting for others...', {
-        icon: '⏳',
-      });
-    }
+    // The SwipeStack is empty - the server will confirm when user is truly done
+    // Don't set userDone here - wait for server confirmation via swipe mutation
+    console.log('SwipeStack empty, waiting for server confirmation...');
   };
 
   if (!hasHydrated || (!isAuthenticated && hasHydrated)) {
@@ -172,12 +168,40 @@ export default function MatchingPage() {
             </div>
 
             <button
-              onClick={() => router.push(`/lobby/${lobbyId}/room`)}
+              onClick={() => router.push('/lobby/create')}
               className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold transition-colors"
             >
-              Back to Lobby
+              Back to Home
             </button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show processing state when stack is empty but waiting for server confirmation
+  const isProcessingLastSwipe = restaurants.length === 0 && !userDone && swipeMutation.isPending;
+  const isWaitingForConfirmation = restaurants.length === 0 && !userDone && !swipeMutation.isPending;
+
+  // If stack is empty but server hasn't confirmed done yet, show loading
+  if (isProcessingLastSwipe) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Recording your last swipe...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If stack is empty and mutation done, but userDone not set - wait for polling
+  if (isWaitingForConfirmation && swipeProgress?.userSwipeCount >= swipeProgress?.totalRestaurants) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Finishing up...</p>
         </div>
       </div>
     );

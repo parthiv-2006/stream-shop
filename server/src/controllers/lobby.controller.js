@@ -354,19 +354,22 @@ exports.getRestaurants = async (req, res, next) => {
 
     // Check if we already have matching restaurants stored for this session
     let restaurants;
-    if (lobby.matchingRestaurants && lobby.matchingRestaurants.length > 0) {
+    const mongoose = require('mongoose');
+    
+    if (lobby.matchingRestaurants && lobby.matchingRestaurants.length >= 5) {
       // Fetch the stored restaurants
-      const mongoose = require('mongoose');
       const storedIds = lobby.matchingRestaurants
         .filter(id => mongoose.Types.ObjectId.isValid(id))
         .map(id => new mongoose.Types.ObjectId(id));
       restaurants = await Restaurant.find({ _id: { $in: storedIds } });
     } else {
-      // First fetch - get restaurants and store them
+      // First fetch or too few restaurants - get restaurants and store them
+      // Try with preference filter first
       restaurants = await Restaurant.find(query).limit(20);
 
-      // If no restaurants match, return some default options
-      if (restaurants.length === 0) {
+      // If too few restaurants match, get all restaurants (relaxed filtering)
+      if (restaurants.length < 5) {
+        console.log('Preference filter too strict, fetching all restaurants');
         restaurants = await Restaurant.find({}).limit(20);
       }
 
