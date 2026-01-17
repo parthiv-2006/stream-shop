@@ -96,6 +96,10 @@ const lobbySchema = new mongoose.Schema({
   winningRestaurant: {
     type: String,
   },
+  // Restaurants that are tied (for revoting)
+  tiedRestaurants: [{
+    type: String,
+  }],
 }, {
   timestamps: true,
 });

@@ -96,6 +96,20 @@ export default function VotingPage() {
     },
   });
 
+  // Revote mutation (for tied votes)
+  const revoteMutation = useMutation({
+    mutationFn: async (useTiedOnly) => {
+      return lobbyApi.revoteLobby(lobbyId, useTiedOnly);
+    },
+    onSuccess: (data) => {
+      toast.success(data.message || 'Revoting started!');
+      queryClient.invalidateQueries(['voting', lobbyId]);
+    },
+    onError: (error) => {
+      toast.error(error.message || 'Failed to start revote');
+    },
+  });
+
   useEffect(() => {
     if (hasHydrated && !isAuthenticated) {
       router.push('/');
@@ -363,7 +377,70 @@ export default function VotingPage() {
           </div>
         )}
 
-        {hasVoted && (
+        {/* Tie Modal Overlay */}
+        {votingData?.isTied && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4 animate-in fade-in zoom-in duration-300">
+              <div className="text-center">
+                <div className="text-6xl mb-4">🤝</div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">It&apos;s a Tie!</h2>
+                <p className="text-gray-600 mb-6">
+                  {votingData.tiedRestaurants?.length || 0} restaurants received the same number of votes.
+                </p>
+                
+                {isHost ? (
+                  <div className="space-y-4">
+                    <p className="text-sm text-gray-500">As the host, choose how to proceed:</p>
+                    <div className="flex flex-col gap-3">
+                      <button
+                        onClick={() => revoteMutation.mutate(true)}
+                        disabled={revoteMutation.isPending}
+                        className="w-full px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {revoteMutation.isPending ? 'Starting...' : 'Revote with Tied Restaurants Only'}
+                      </button>
+                      <button
+                        onClick={() => revoteMutation.mutate(false)}
+                        disabled={revoteMutation.isPending}
+                        className="w-full px-6 py-3 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {revoteMutation.isPending ? 'Starting...' : 'Revote with All Options'}
+                      </button>
+                      <div className="relative my-2">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-gray-200"></div>
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                          <span className="px-2 bg-white text-gray-400">or</span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => resetMutation.mutate()}
+                        disabled={resetMutation.isPending}
+                        className="w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {resetMutation.isPending ? 'Resetting...' : 'Start Fresh with New Restaurants'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-center gap-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-500"></div>
+                      <span className="text-gray-600">Waiting for the host to decide...</span>
+                    </div>
+                    <p className="text-sm text-gray-400">
+                      The host will choose whether to revote or start fresh.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Show waiting state (only if voted but no tie) */}
+        {hasVoted && !votingData?.isTied && (
           <div className="mt-8 text-center">
             <div className="bg-white rounded-xl shadow p-6">
               <p className="text-gray-600">

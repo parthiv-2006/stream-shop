@@ -599,6 +599,10 @@ exports.getVotingData = async (req, res, next) => {
       votedUserIds.has(p.user_id.toString())
     );
 
+    // Check if there's a tie
+    const tiedRestaurants = lobby.tiedRestaurants || [];
+    const isTied = allVoted && tiedRestaurants.length > 1 && !lobby.winningRestaurant;
+
     res.json({
       status: lobby.status,
       restaurants: restaurants.map(r => ({
@@ -617,6 +621,8 @@ exports.getVotingData = async (req, res, next) => {
       participantCount,
       voteCount: votes.length,
       winningRestaurant: lobby.winningRestaurant || null,
+      isTied,
+      tiedRestaurants: isTied ? tiedRestaurants : [],
     });
   } catch (error) {
     if (error.name === 'CastError') {
@@ -708,8 +714,11 @@ exports.submitVote = async (req, res, next) => {
       votedUserIds.has(p.user_id.toString())
     );
 
-    // If all voted, calculate winner and complete
+    // If all voted, calculate winner and check for ties
     let winner = null;
+    let isTied = false;
+    let tiedRestaurants = [];
+    
     if (allVoted) {
       // Count votes
       const voteCounts = {};
@@ -722,18 +731,36 @@ exports.submitVote = async (req, res, next) => {
         .sort(([, a], [, b]) => b - a);
       
       if (sortedRestaurants.length > 0) {
-        winner = sortedRestaurants[0][0];
-        lobby.winningRestaurant = winner;
-        lobby.status = 'completed';
-        await lobby.save();
+        const highestVoteCount = sortedRestaurants[0][1];
+        
+        // Check for ties - find all restaurants with the highest vote count
+        tiedRestaurants = sortedRestaurants
+          .filter(([, count]) => count === highestVoteCount)
+          .map(([restaurantId]) => restaurantId);
+        
+        if (tiedRestaurants.length === 1) {
+          // Clear winner - no tie
+          winner = tiedRestaurants[0];
+          lobby.winningRestaurant = winner;
+          lobby.status = 'completed';
+          await lobby.save();
+        } else {
+          // It's a tie - don't complete, let host decide
+          isTied = true;
+          // Store tied restaurants for revoting
+          lobby.tiedRestaurants = tiedRestaurants;
+          await lobby.save();
+        }
       }
     }
 
     res.json({
       success: true,
-      message: 'Vote recorded',
+      message: isTied ? 'Voting complete but resulted in a tie' : 'Vote recorded',
       allVoted,
       winner,
+      isTied,
+      tiedRestaurants: isTied ? tiedRestaurants : [],
       lobbyStatus: lobby.status,
     });
   } catch (error) {
@@ -849,6 +876,7 @@ exports.resetLobby = async (req, res, next) => {
     lobby.consensusRestaurants = [];
     lobby.votes = [];
     lobby.winningRestaurant = undefined;
+    lobby.tiedRestaurants = [];
     lobby.status = 'waiting';
 
     await lobby.save();
@@ -939,6 +967,69 @@ exports.leaveLobby = async (req, res, next) => {
       message: isHost ? 'You left the lobby. Host transferred to another participant.' : 'You left the lobby.',
       lobbyDeleted: false,
       newHostId: isHost ? lobby.host_id.toString() : null,
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Revote - clear votes and optionally narrow down to tied restaurants (host only)
+ */
+exports.revoteLobby = async (req, res, next) => {
+  try {
+    const { lobbyId } = req.params;
+    const userId = req.user?.userId;
+    const { useTiedOnly } = req.body; // If true, only use tied restaurants
+
+    if (!userId) {
+      return res.status(401).json({
+        error: { message: 'Authentication required' },
+      });
+    }
+
+    const lobby = await Lobby.findById(lobbyId);
+    
+    if (!lobby) {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+
+    // Only host can trigger revote
+    if (lobby.host_id.toString() !== userId) {
+      return res.status(403).json({
+        error: { message: 'Only the host can trigger a revote' },
+      });
+    }
+
+    // Only allow revote from 'voting' status (when there's a tie)
+    if (lobby.status !== 'voting') {
+      return res.status(400).json({
+        error: { message: 'Revote is only available during voting phase' },
+      });
+    }
+
+    // If useTiedOnly and we have tied restaurants, narrow down the consensus
+    if (useTiedOnly && lobby.tiedRestaurants && lobby.tiedRestaurants.length > 0) {
+      lobby.consensusRestaurants = [...lobby.tiedRestaurants];
+    }
+
+    // Clear votes and tied restaurants for fresh voting
+    lobby.votes = [];
+    lobby.tiedRestaurants = [];
+
+    await lobby.save();
+
+    res.json({
+      success: true,
+      message: useTiedOnly ? 'Revoting with tied restaurants only' : 'Revoting with all consensus restaurants',
+      consensusRestaurants: lobby.consensusRestaurants,
     });
   } catch (error) {
     if (error.name === 'CastError') {

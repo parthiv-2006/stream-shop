@@ -37,4 +37,9 @@ export const lobbyApi = {
   leaveLobby: (lobbyId) => apiRequest(`/lobby/${lobbyId}/leave`, {
     method: 'POST',
   }),
+
+  revoteLobby: (lobbyId, useTiedOnly = false) => apiRequest(`/lobby/${lobbyId}/revote`, {
+    method: 'POST',
+    body: JSON.stringify({ useTiedOnly }),
+  }),
 };

@@ -12,6 +12,7 @@ const {
   getResults,
   resetLobby,
   leaveLobby,
+  revoteLobby,
 } = require('../controllers/lobby.controller');
 const authenticate = require('../middleware/auth.middleware');
 
@@ -31,5 +32,6 @@ router.get('/:lobbyId/results', authenticate(true), getResults);
 // Session management endpoints
 router.post('/:lobbyId/reset', authenticate(true), resetLobby);
 router.post('/:lobbyId/leave', authenticate(true), leaveLobby);
+router.post('/:lobbyId/revote', authenticate(true), revoteLobby);
 
 module.exports = router;
