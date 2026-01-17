@@ -156,11 +156,12 @@ exports.getLobby = async (req, res, next) => {
     // Format participants for frontend
     const participants = lobby.participants.map(p => {
       // Handle populated user_id (object) or unpopulated (ObjectId)
-      const userId = p.user_id?._id?.toString() || p.user_id?.toString() || p.user_id;
+      const odId = p.user_id?._id?.toString() || p.user_id?.toString() || p.user_id;
       const username = p.user_id?.username || p.name || 'Anonymous';
       
       return {
-        id: userId,
+        id: odId,
+        user_id: odId,
         name: p.name || username,
         isHost: p.isHost || false,
         isReady: p.isReady !== undefined ? p.isReady : true,
@@ -171,6 +172,7 @@ exports.getLobby = async (req, res, next) => {
       id: lobby._id.toString(),
       code: lobby.code,
       name: lobby.name,
+      host_id: lobby.host_id.toString(),
       participants,
       restaurants: lobby.restaurants || [],
       status: lobby.status,

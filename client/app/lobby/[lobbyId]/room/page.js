@@ -35,7 +35,7 @@ export default function LobbyRoomPage() {
   const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
 
-  const isHost = lobby?.host_id === user?.userId;
+  const isHost = lobby?.host_id === (user?.userId || user?.id);
 
   const leaveMutation = useMutation({
     mutationFn: async () => lobbyApi.leaveLobby(lobbyId),

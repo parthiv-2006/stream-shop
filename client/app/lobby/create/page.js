@@ -148,7 +148,7 @@ export default function CreateLobbyPage() {
 
   // Lobby room view
   if (lobbyId) {
-    const isHost = lobby?.host_id === user?.userId;
+    const isHost = lobby?.host_id === (user?.userId || user?.id);
     
     return (
       <div className="min-h-screen bg-animated-gradient text-white relative overflow-hidden p-4">

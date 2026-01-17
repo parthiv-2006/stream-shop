@@ -48,7 +48,7 @@ export default function VotingPage() {
     refetchInterval: 3000,
   });
 
-  const isHost = lobbyData?.host_id === user?.userId;
+  const isHost = lobbyData?.host_id === (user?.userId || user?.id);
 
   useEffect(() => {
     if (lobbyData?.status === 'waiting') {
