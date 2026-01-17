@@ -42,4 +42,12 @@ export const lobbyApi = {
     method: 'POST',
     body: JSON.stringify({ useTiedOnly }),
   }),
+
+  // Vibe Check endpoints
+  getVibeCheckStatus: (lobbyId) => apiRequest(`/lobby/${lobbyId}/vibe-check`),
+  
+  submitVibeCheck: (lobbyId, vibeCheck) => apiRequest(`/lobby/${lobbyId}/vibe-check`, {
+    method: 'POST',
+    body: JSON.stringify(vibeCheck),
+  }),
 };

@@ -43,7 +43,8 @@ exports.createLobby = async (req, res, next) => {
         user_id: user._id,
         name: user.username,
         isHost: true,
-        isReady: true,
+        isReady: false,
+        vibeCheck: null,
       }],
       status: 'waiting',
     });
@@ -124,7 +125,8 @@ exports.joinLobby = async (req, res, next) => {
       user_id: user._id,
       name: user.username,
       isHost: false,
-      isReady: true,
+      isReady: false,
+      vibeCheck: null,
     });
 
     await lobby.save();
@@ -164,7 +166,8 @@ exports.getLobby = async (req, res, next) => {
         user_id: odId,
         name: p.name || username,
         isHost: p.isHost || false,
-        isReady: p.isReady !== undefined ? p.isReady : true,
+        isReady: p.isReady || false,
+        hasVibeCheck: !!p.vibeCheck,
       };
     });
 
@@ -881,6 +884,12 @@ exports.resetLobby = async (req, res, next) => {
     lobby.tiedRestaurants = [];
     lobby.status = 'waiting';
 
+    // Reset vibe checks for all participants
+    lobby.participants.forEach(p => {
+      p.isReady = false;
+      p.vibeCheck = null;
+    });
+
     await lobby.save();
 
     res.json({
@@ -1032,6 +1041,127 @@ exports.revoteLobby = async (req, res, next) => {
       success: true,
       message: useTiedOnly ? 'Revoting with tied restaurants only' : 'Revoting with all consensus restaurants',
       consensusRestaurants: lobby.consensusRestaurants,
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Submit vibe check preferences for current session
+ */
+exports.submitVibeCheck = async (req, res, next) => {
+  try {
+    const { lobbyId } = req.params;
+    const userId = req.user?.userId;
+    const { meal_type, budget_today, mood, distance } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        error: { message: 'Authentication required' },
+      });
+    }
+
+    const lobby = await Lobby.findById(lobbyId);
+    
+    if (!lobby) {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+
+    if (lobby.status !== 'waiting') {
+      return res.status(400).json({
+        error: { message: 'Vibe check can only be submitted while waiting' },
+      });
+    }
+
+    // Find the participant
+    const participant = lobby.participants.find(
+      p => p.user_id.toString() === userId
+    );
+
+    if (!participant) {
+      return res.status(403).json({
+        error: { message: 'You are not a participant in this lobby' },
+      });
+    }
+
+    // Update the vibe check
+    participant.vibeCheck = {
+      meal_type: meal_type || 'any',
+      budget_today: budget_today || 'any',
+      mood: mood || 'any',
+      distance: distance || 'anywhere',
+    };
+    participant.isReady = true;
+
+    await lobby.save();
+
+    // Check if all participants have completed vibe check
+    const allReady = lobby.participants.every(p => p.isReady);
+
+    res.json({
+      success: true,
+      message: 'Vibe check submitted',
+      vibeCheck: participant.vibeCheck,
+      allReady,
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Get vibe check status for lobby
+ */
+exports.getVibeCheckStatus = async (req, res, next) => {
+  try {
+    const { lobbyId } = req.params;
+    const userId = req.user?.userId;
+
+    const lobby = await Lobby.findById(lobbyId);
+    
+    if (!lobby) {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+
+    // Get current user's vibe check
+    const currentParticipant = lobby.participants.find(
+      p => p.user_id.toString() === userId
+    );
+
+    // Get all participants' status
+    const participantStatus = lobby.participants.map(p => ({
+      user_id: p.user_id.toString(),
+      name: p.name,
+      isReady: p.isReady,
+      hasVibeCheck: !!p.vibeCheck,
+    }));
+
+    const allReady = lobby.participants.every(p => p.isReady);
+    const readyCount = lobby.participants.filter(p => p.isReady).length;
+
+    res.json({
+      status: lobby.status,
+      userVibeCheck: currentParticipant?.vibeCheck || null,
+      userIsReady: currentParticipant?.isReady || false,
+      participants: participantStatus,
+      allReady,
+      readyCount,
+      totalCount: lobby.participants.length,
     });
   } catch (error) {
     if (error.name === 'CastError') {

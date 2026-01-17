@@ -1,5 +1,29 @@
 const mongoose = require('mongoose');
 
+// Session-specific preferences (Vibe Check)
+const vibeCheckSchema = new mongoose.Schema({
+  meal_type: {
+    type: String,
+    enum: ['light', 'moderate', 'heavy', 'any'],
+    default: null,
+  },
+  budget_today: {
+    type: String,
+    enum: ['cheap', 'moderate', 'fancy', 'any'],
+    default: null,
+  },
+  mood: {
+    type: String,
+    enum: ['adventurous', 'comfort', 'healthy', 'indulgent', 'any'],
+    default: null,
+  },
+  distance: {
+    type: String,
+    enum: ['nearby', 'moderate', 'anywhere'],
+    default: null,
+  },
+}, { _id: false });
+
 const participantSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -17,6 +41,10 @@ const participantSchema = new mongoose.Schema({
   isReady: {
     type: Boolean,
     default: false,
+  },
+  vibeCheck: {
+    type: vibeCheckSchema,
+    default: null,
   },
   joinedAt: {
     type: Date,

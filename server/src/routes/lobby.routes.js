@@ -13,6 +13,8 @@ const {
   resetLobby,
   leaveLobby,
   revoteLobby,
+  submitVibeCheck,
+  getVibeCheckStatus,
 } = require('../controllers/lobby.controller');
 const authenticate = require('../middleware/auth.middleware');
 
@@ -23,6 +25,10 @@ router.get('/:lobbyId', authenticate(true), getLobby);
 router.post('/:lobbyId/start-matching', authenticate(true), startMatching);
 router.get('/:lobbyId/restaurants', authenticate(true), getRestaurants);
 router.post('/:lobbyId/swipe', authenticate(true), recordSwipe);
+
+// Vibe Check endpoints
+router.get('/:lobbyId/vibe-check', authenticate(true), getVibeCheckStatus);
+router.post('/:lobbyId/vibe-check', authenticate(true), submitVibeCheck);
 
 // Voting endpoints
 router.get('/:lobbyId/voting', authenticate(true), getVotingData);
