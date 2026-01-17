@@ -11,16 +11,47 @@ export function PreferenceForm({ onSubmit }) {
     spice_level: 'medium',
     budget: 'any',
     allergies: [],
-    vegetarian: false,
+    dietary_preferences: [], // Now supports multiple dietary preferences
     disliked_cuisines: [],
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const dietaryPreferences = [
+    { id: 'vegetarian', label: 'Vegetarian', icon: '🌱', description: 'No meat or fish' },
+    { id: 'vegan', label: 'Vegan', icon: '🌿', description: 'No animal products' },
+    { id: 'pescatarian', label: 'Pescatarian', icon: '🐟', description: 'Fish but no meat' },
+    { id: 'halal', label: 'Halal', icon: '☪️', description: 'Halal-certified foods' },
+    { id: 'kosher', label: 'Kosher', icon: '✡️', description: 'Kosher-certified foods' },
+    { id: 'gluten-free', label: 'Gluten-Free', icon: '🌾', description: 'No gluten' },
+    { id: 'lactose-free', label: 'Lactose-Free', icon: '🥛', description: 'No lactose' },
+    { id: 'paleo', label: 'Paleo', icon: '🥩', description: 'Paleolithic diet' },
+    { id: 'keto', label: 'Keto', icon: '🥑', description: 'Ketogenic diet' },
+    { id: 'low-carb', label: 'Low-Carb', icon: '🥗', description: 'Low carbohydrate' },
+    { id: 'low-sodium', label: 'Low-Sodium', icon: '🧂', description: 'Reduced salt' },
+    { id: 'raw-food', label: 'Raw Food', icon: '🥕', description: 'Raw/uncooked foods' },
+  ];
+
   const commonCuisines = [
-    'Italian', 'Chinese', 'Japanese', 'Mexican', 'Thai',
-    'Indian', 'American', 'Mediterranean', 'French', 'Korean',
-    'Vietnamese', 'Greek', 'Spanish', 'Seafood', 'BBQ'
+    // Popular International
+    'Italian', 'Chinese', 'Japanese', 'Mexican', 'Thai', 'Indian', 
+    'American', 'Mediterranean', 'French', 'Korean', 'Vietnamese', 
+    'Greek', 'Spanish', 'Turkish', 'Lebanese', 'Moroccan',
+    // Regional Asian
+    'Indonesian', 'Malaysian', 'Singaporean', 'Filipino', 'Cambodian',
+    'Burmese', 'Sri Lankan', 'Bangladeshi', 'Pakistani', 'Nepalese',
+    // Regional European
+    'German', 'British', 'Irish', 'Russian', 'Polish', 'Czech',
+    'Hungarian', 'Romanian', 'Portuguese', 'Swiss', 'Austrian',
+    // Latin American
+    'Brazilian', 'Peruvian', 'Argentine', 'Chilean', 'Colombian',
+    'Cuban', 'Caribbean', 'Jamaican', 'Puerto Rican',
+    // Middle Eastern & African
+    'Iranian', 'Iraqi', 'Ethiopian', 'Egyptian', 'South African',
+    'Nigerian', 'Senegalese',
+    // Specialty
+    'Seafood', 'BBQ', 'Steakhouse', 'Sushi', 'Ramen', 'Dim Sum',
+    'Tapas', 'Fusion', 'Vegetarian', 'Vegan', 'Fast Food'
   ];
 
   const toggleCuisine = (cuisine) => {
@@ -29,6 +60,15 @@ export function PreferenceForm({ onSubmit }) {
       disliked_cuisines: prev.disliked_cuisines.includes(cuisine)
         ? prev.disliked_cuisines.filter(c => c !== cuisine)
         : [...prev.disliked_cuisines, cuisine]
+    }));
+  };
+
+  const toggleDietaryPreference = (prefId) => {
+    setPreferences(prev => ({
+      ...prev,
+      dietary_preferences: prev.dietary_preferences.includes(prefId)
+        ? prev.dietary_preferences.filter(id => id !== prefId)
+        : [...prev.dietary_preferences, prefId]
     }));
   };
 
@@ -66,29 +106,33 @@ export function PreferenceForm({ onSubmit }) {
         onChange={(value) => setPreferences(prev => ({ ...prev, budget: value }))}
       />
 
-      {/* Vegetarian Option */}
+      {/* Dietary Preferences */}
       <div className="space-y-2">
-        <label className="block text-sm font-medium text-gray-700">Dietary Preference</label>
-        <button
-          type="button"
-          onClick={() => setPreferences(prev => ({ ...prev, vegetarian: !prev.vegetarian }))}
-          className={`w-full p-4 rounded-lg border-2 transition-all text-left ${
-            preferences.vegetarian
-              ? 'border-green-600 bg-green-50'
-              : 'border-gray-200 hover:border-gray-300'
-          }`}
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-2xl">🌱</span>
-            <div>
-              <div className="font-medium text-gray-700">Vegetarian</div>
-              <div className="text-xs text-gray-500">Prefer vegetarian options</div>
-            </div>
-            {preferences.vegetarian && (
-              <span className="ml-auto text-green-600">✓</span>
-            )}
-          </div>
-        </button>
+        <label className="block text-sm font-medium text-gray-700">
+          Dietary Preferences <span className="text-xs text-gray-500">(Select all that apply)</span>
+        </label>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+          {dietaryPreferences.map((pref) => (
+            <button
+              key={pref.id}
+              type="button"
+              onClick={() => toggleDietaryPreference(pref.id)}
+              className={`p-3 rounded-lg border-2 transition-all text-left ${
+                preferences.dietary_preferences.includes(pref.id)
+                  ? 'border-green-600 bg-green-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-xl">{pref.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-gray-700 text-sm">{pref.label}</div>
+                  <div className="text-xs text-gray-500 truncate">{pref.description}</div>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Allergies */}
