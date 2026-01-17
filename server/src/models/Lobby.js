@@ -48,25 +48,9 @@ const lobbySchema = new mongoose.Schema({
   restaurants: [{
     type: mongoose.Schema.Types.Mixed,
   }],
-  swipes: [{
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    restaurant_id: {
-      type: String, // Can be ObjectId or external ID
-      required: true,
-    },
-    direction: {
-      type: String,
-      enum: ['left', 'right'],
-      required: true,
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-    },
+  // Restaurants assigned for this matching session
+  matchingRestaurants: [{
+    type: String, // Restaurant IDs
   }],
   swipes: [{
     user_id: {
@@ -88,6 +72,30 @@ const lobbySchema = new mongoose.Schema({
       default: Date.now,
     },
   }],
+  // Restaurants that everyone swiped right on (for voting)
+  consensusRestaurants: [{
+    type: String, // Restaurant IDs
+  }],
+  // Votes for final restaurant selection
+  votes: [{
+    user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    restaurant_id: {
+      type: String,
+      required: true,
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
+  // Final winning restaurant
+  winningRestaurant: {
+    type: String,
+  },
 }, {
   timestamps: true,
 });

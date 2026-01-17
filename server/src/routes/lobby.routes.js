@@ -7,6 +7,9 @@ const {
   startMatching,
   getRestaurants,
   recordSwipe,
+  getVotingData,
+  submitVote,
+  getResults,
 } = require('../controllers/lobby.controller');
 const authenticate = require('../middleware/auth.middleware');
 
@@ -17,5 +20,10 @@ router.get('/:lobbyId', authenticate(true), getLobby);
 router.post('/:lobbyId/start-matching', authenticate(true), startMatching);
 router.get('/:lobbyId/restaurants', authenticate(true), getRestaurants);
 router.post('/:lobbyId/swipe', authenticate(true), recordSwipe);
+
+// Voting endpoints
+router.get('/:lobbyId/voting', authenticate(true), getVotingData);
+router.post('/:lobbyId/vote', authenticate(true), submitVote);
+router.get('/:lobbyId/results', authenticate(true), getResults);
 
 module.exports = router;

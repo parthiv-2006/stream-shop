@@ -352,17 +352,38 @@ exports.getRestaurants = async (req, res, next) => {
       }
     }
 
-    // Fetch restaurants (limit to 20 for now, can be paginated later)
-    let restaurants = await Restaurant.find(query).limit(20);
+    // Check if we already have matching restaurants stored for this session
+    let restaurants;
+    if (lobby.matchingRestaurants && lobby.matchingRestaurants.length > 0) {
+      // Fetch the stored restaurants
+      const mongoose = require('mongoose');
+      const storedIds = lobby.matchingRestaurants
+        .filter(id => mongoose.Types.ObjectId.isValid(id))
+        .map(id => new mongoose.Types.ObjectId(id));
+      restaurants = await Restaurant.find({ _id: { $in: storedIds } });
+    } else {
+      // First fetch - get restaurants and store them
+      restaurants = await Restaurant.find(query).limit(20);
 
-    // If no restaurants match, return some default options
-    if (restaurants.length === 0) {
-      restaurants = await Restaurant.find({}).limit(10);
+      // If no restaurants match, return some default options
+      if (restaurants.length === 0) {
+        restaurants = await Restaurant.find({}).limit(20);
+      }
+
+      // Store the restaurant IDs for this matching session
+      lobby.matchingRestaurants = restaurants.map(r => r._id.toString());
+      await lobby.save();
     }
 
+    // Filter out already swiped restaurants for this user
+    const userSwipedIds = new Set(swipedRestaurantIds);
+    const unswipedRestaurants = restaurants.filter(r => 
+      !userSwipedIds.has(r._id.toString())
+    );
+
     res.json({
-      restaurants: restaurants.map(r => ({
-        id: r._id.toString(),
+      restaurants: unswipedRestaurants.map(r => ({
+        id: r._id?.toString() || r.id,
         name: r.name,
         cuisine: r.cuisine,
         description: r.description,
@@ -374,6 +395,9 @@ exports.getRestaurants = async (req, res, next) => {
         spice_level: r.spice_level,
         tags: r.tags,
       })),
+      totalRestaurants: lobby.matchingRestaurants.length,
+      swipedCount: swipedRestaurantIds.length,
+      remainingCount: unswipedRestaurants.length,
     });
   } catch (error) {
     if (error.name === 'CastError') {
@@ -457,28 +481,318 @@ exports.recordSwipe = async (req, res, next) => {
 
     await lobby.save();
 
-    // Check if all participants have swiped on enough restaurants
-    // For now, just return success - we can add logic to move to voting phase later
+    // Check swiping progress
     const participantCount = lobby.participants.length;
-    const rightSwipes = lobby.swipes?.filter(s => s.direction === 'right') || [];
-    
-    // Group right swipes by restaurant
+    const totalRestaurants = lobby.matchingRestaurants?.length || 0;
+    const swipes = lobby.swipes || [];
+
+    // Count swipes per user
+    const swipesPerUser = {};
+    swipes.forEach(swipe => {
+      const oderId = swipe.user_id.toString();
+      swipesPerUser[oderId] = (swipesPerUser[oderId] || 0) + 1;
+    });
+
+    // Check if all participants have swiped all restaurants
+    const allDoneSwiping = lobby.participants.every(p => {
+      const userSwipeCount = swipesPerUser[p.user_id.toString()] || 0;
+      return userSwipeCount >= totalRestaurants;
+    });
+
+    // Calculate consensus restaurants (all participants swiped right)
+    const rightSwipes = swipes.filter(s => s.direction === 'right');
     const restaurantSwipeCounts = {};
     rightSwipes.forEach(swipe => {
       restaurantSwipeCounts[swipe.restaurant_id] = 
         (restaurantSwipeCounts[swipe.restaurant_id] || 0) + 1;
     });
 
-    // Find restaurants that all participants swiped right on
     const consensusRestaurants = Object.entries(restaurantSwipeCounts)
       .filter(([_, count]) => count === participantCount)
       .map(([restaurantId]) => restaurantId);
+
+    // If all users are done swiping, transition to voting
+    let transitionedToVoting = false;
+    if (allDoneSwiping && consensusRestaurants.length > 0) {
+      lobby.status = 'voting';
+      lobby.consensusRestaurants = consensusRestaurants;
+      await lobby.save();
+      transitionedToVoting = true;
+    }
+
+    // Calculate user's progress
+    const userSwipeCount = swipesPerUser[userId] || 0;
+    const userDone = userSwipeCount >= totalRestaurants;
 
     res.json({
       success: true,
       message: 'Swipe recorded',
       consensusReached: consensusRestaurants.length > 0,
       consensusRestaurants,
+      progress: {
+        userSwipeCount,
+        totalRestaurants,
+        userDone,
+        allDone: allDoneSwiping,
+      },
+      transitionedToVoting,
+      lobbyStatus: lobby.status,
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Get voting data (consensus restaurants for voting)
+ */
+exports.getVotingData = async (req, res, next) => {
+  try {
+    const { lobbyId } = req.params;
+    const userId = req.user?.userId;
+
+    const lobby = await Lobby.findById(lobbyId);
+    
+    if (!lobby) {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+
+    // Check if lobby is in voting or completed status
+    if (!['voting', 'completed'].includes(lobby.status)) {
+      return res.status(400).json({
+        error: { message: 'Lobby is not in voting phase' },
+      });
+    }
+
+    // Get consensus restaurant details
+    const mongoose = require('mongoose');
+    const consensusIds = (lobby.consensusRestaurants || [])
+      .filter(id => mongoose.Types.ObjectId.isValid(id))
+      .map(id => new mongoose.Types.ObjectId(id));
+    
+    const restaurants = await Restaurant.find({ _id: { $in: consensusIds } });
+
+    // Get current votes
+    const votes = lobby.votes || [];
+    const voteCounts = {};
+    votes.forEach(vote => {
+      voteCounts[vote.restaurant_id] = (voteCounts[vote.restaurant_id] || 0) + 1;
+    });
+
+    // Check if user has voted
+    const userVote = votes.find(v => v.user_id.toString() === userId);
+
+    // Check if all participants have voted
+    const participantCount = lobby.participants.length;
+    const votedUserIds = new Set(votes.map(v => v.user_id.toString()));
+    const allVoted = lobby.participants.every(p => 
+      votedUserIds.has(p.user_id.toString())
+    );
+
+    res.json({
+      status: lobby.status,
+      restaurants: restaurants.map(r => ({
+        id: r._id.toString(),
+        name: r.name,
+        cuisine: r.cuisine,
+        description: r.description,
+        image: r.image || '/placeholder-restaurant.jpg',
+        price_range: r.price_range,
+        location: r.location,
+        rating: r.rating,
+        voteCount: voteCounts[r._id.toString()] || 0,
+      })),
+      userVote: userVote?.restaurant_id || null,
+      allVoted,
+      participantCount,
+      voteCount: votes.length,
+      winningRestaurant: lobby.winningRestaurant || null,
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Submit a vote for a restaurant
+ */
+exports.submitVote = async (req, res, next) => {
+  try {
+    const { lobbyId } = req.params;
+    const userId = req.user?.userId;
+    const { restaurantId } = req.body;
+
+    if (!restaurantId) {
+      return res.status(400).json({
+        error: { message: 'Restaurant ID is required' },
+      });
+    }
+
+    if (!userId) {
+      return res.status(401).json({
+        error: { message: 'Authentication required' },
+      });
+    }
+
+    const lobby = await Lobby.findById(lobbyId);
+    
+    if (!lobby) {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+
+    // Check if lobby is in voting status
+    if (lobby.status !== 'voting') {
+      return res.status(400).json({
+        error: { message: 'Lobby is not in voting phase' },
+      });
+    }
+
+    // Check if user is a participant
+    const isParticipant = lobby.participants.some(p => p.user_id.toString() === userId);
+    if (!isParticipant) {
+      return res.status(403).json({
+        error: { message: 'You must be a participant to vote' },
+      });
+    }
+
+    // Check if restaurant is in consensus list
+    if (!lobby.consensusRestaurants?.includes(restaurantId)) {
+      return res.status(400).json({
+        error: { message: 'Restaurant is not in the voting options' },
+      });
+    }
+
+    // Initialize votes array if needed
+    if (!lobby.votes) {
+      lobby.votes = [];
+    }
+
+    // Check if user already voted
+    const existingVote = lobby.votes.find(v => v.user_id.toString() === userId);
+    if (existingVote) {
+      // Update existing vote
+      existingVote.restaurant_id = restaurantId;
+      existingVote.timestamp = new Date();
+    } else {
+      // Add new vote
+      lobby.votes.push({
+        user_id: userId,
+        restaurant_id: restaurantId,
+        timestamp: new Date(),
+      });
+    }
+
+    await lobby.save();
+
+    // Check if all participants have voted
+    const participantCount = lobby.participants.length;
+    const votedUserIds = new Set(lobby.votes.map(v => v.user_id.toString()));
+    const allVoted = lobby.participants.every(p => 
+      votedUserIds.has(p.user_id.toString())
+    );
+
+    // If all voted, calculate winner and complete
+    let winner = null;
+    if (allVoted) {
+      // Count votes
+      const voteCounts = {};
+      lobby.votes.forEach(vote => {
+        voteCounts[vote.restaurant_id] = (voteCounts[vote.restaurant_id] || 0) + 1;
+      });
+
+      // Find winner (highest vote count)
+      const sortedRestaurants = Object.entries(voteCounts)
+        .sort(([, a], [, b]) => b - a);
+      
+      if (sortedRestaurants.length > 0) {
+        winner = sortedRestaurants[0][0];
+        lobby.winningRestaurant = winner;
+        lobby.status = 'completed';
+        await lobby.save();
+      }
+    }
+
+    res.json({
+      success: true,
+      message: 'Vote recorded',
+      allVoted,
+      winner,
+      lobbyStatus: lobby.status,
+    });
+  } catch (error) {
+    if (error.name === 'CastError') {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Get final results
+ */
+exports.getResults = async (req, res, next) => {
+  try {
+    const { lobbyId } = req.params;
+
+    const lobby = await Lobby.findById(lobbyId);
+    
+    if (!lobby) {
+      return res.status(404).json({
+        error: { message: 'Lobby not found' },
+      });
+    }
+
+    // Check if lobby is completed
+    if (lobby.status !== 'completed') {
+      return res.status(400).json({
+        error: { message: 'Voting is not yet complete' },
+      });
+    }
+
+    // Get winning restaurant details
+    const mongoose = require('mongoose');
+    let winningRestaurant = null;
+    if (lobby.winningRestaurant && mongoose.Types.ObjectId.isValid(lobby.winningRestaurant)) {
+      winningRestaurant = await Restaurant.findById(lobby.winningRestaurant);
+    }
+
+    // Get vote counts
+    const voteCounts = {};
+    (lobby.votes || []).forEach(vote => {
+      voteCounts[vote.restaurant_id] = (voteCounts[vote.restaurant_id] || 0) + 1;
+    });
+
+    res.json({
+      status: lobby.status,
+      winner: winningRestaurant ? {
+        id: winningRestaurant._id.toString(),
+        name: winningRestaurant.name,
+        cuisine: winningRestaurant.cuisine,
+        description: winningRestaurant.description,
+        image: winningRestaurant.image || '/placeholder-restaurant.jpg',
+        price_range: winningRestaurant.price_range,
+        location: winningRestaurant.location,
+        rating: winningRestaurant.rating,
+        voteCount: voteCounts[winningRestaurant._id.toString()] || 0,
+      } : null,
+      totalVotes: lobby.votes?.length || 0,
+      participantCount: lobby.participants.length,
     });
   } catch (error) {
     if (error.name === 'CastError') {
