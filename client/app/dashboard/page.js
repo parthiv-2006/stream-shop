@@ -7,30 +7,41 @@ import { userApi } from '@/lib/api/user';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 
-// Preference options
 const SPICE_LEVELS = [
-  { value: 'none', label: 'No Spice', icon: '🍚' },
-  { value: 'low', label: 'Mild', icon: '🌶️' },
-  { value: 'medium', label: 'Medium', icon: '🌶️🌶️' },
-  { value: 'high', label: 'Hot', icon: '🌶️🌶️🌶️' },
+  { value: 'none', label: 'No Spice', icon: '🍚', color: 'from-gray-400 to-gray-500' },
+  { value: 'low', label: 'Mild', icon: '🌶️', color: 'from-yellow-400 to-orange-400' },
+  { value: 'medium', label: 'Medium', icon: '🌶️🌶️', color: 'from-orange-400 to-red-400' },
+  { value: 'high', label: 'Hot', icon: '🌶️🌶️🌶️', color: 'from-red-500 to-pink-600' },
 ];
 
 const BUDGET_OPTIONS = [
-  { value: 'low', label: 'Budget', icon: '$' },
-  { value: 'medium', label: 'Moderate', icon: '$$' },
-  { value: 'high', label: 'Splurge', icon: '$$$' },
-  { value: 'any', label: 'Any', icon: '💰' },
+  { value: 'low', label: 'Budget', icon: '$', color: 'from-green-400 to-emerald-500' },
+  { value: 'medium', label: 'Moderate', icon: '$$', color: 'from-blue-400 to-cyan-500' },
+  { value: 'high', label: 'Splurge', icon: '$$$', color: 'from-purple-400 to-pink-500' },
+  { value: 'any', label: 'Any', icon: '💰', color: 'from-yellow-400 to-amber-500' },
 ];
 
-const DIETARY_OPTIONS = [
-  'Vegetarian', 'Vegan', 'Pescatarian', 'Halal', 'Kosher',
-  'Gluten-Free', 'Lactose-Free', 'Keto', 'Paleo',
-];
+const DIETARY_OPTIONS = ['Vegetarian', 'Vegan', 'Pescatarian', 'Halal', 'Kosher', 'Gluten-Free', 'Lactose-Free', 'Keto', 'Paleo'];
+const ALLERGY_OPTIONS = ['Peanuts', 'Tree Nuts', 'Dairy', 'Eggs', 'Soy', 'Wheat/Gluten', 'Fish', 'Shellfish', 'Sesame'];
 
-const ALLERGY_OPTIONS = [
-  'Peanuts', 'Tree Nuts', 'Dairy', 'Eggs', 'Soy',
-  'Wheat/Gluten', 'Fish', 'Shellfish', 'Sesame',
-];
+// Animated background particles
+function Particles() {
+  return (
+    <div className="particles">
+      {[...Array(20)].map((_, i) => (
+        <div
+          key={i}
+          className="particle"
+          style={{
+            left: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 20}s`,
+            animationDuration: `${15 + Math.random() * 10}s`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -38,15 +49,14 @@ export default function DashboardPage() {
   const queryClient = useQueryClient();
   const [isEditingPrefs, setIsEditingPrefs] = useState(false);
   const [editedPrefs, setEditedPrefs] = useState(null);
+  const [activeTab, setActiveTab] = useState('home');
 
-  // Fetch user profile
   const { data: profile, isLoading } = useQuery({
     queryKey: ['profile'],
     queryFn: userApi.getProfile,
     enabled: hasHydrated && isAuthenticated,
   });
 
-  // Update preferences mutation
   const updatePrefsMutation = useMutation({
     mutationFn: userApi.updatePreferences,
     onSuccess: () => {
@@ -54,117 +64,156 @@ export default function DashboardPage() {
       queryClient.invalidateQueries(['profile']);
       setIsEditingPrefs(false);
     },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to update preferences');
-    },
+    onError: (error) => toast.error(error.message || 'Failed to update preferences'),
   });
 
   useEffect(() => {
-    if (hasHydrated && !isAuthenticated) {
-      router.push('/');
-    }
+    if (hasHydrated && !isAuthenticated) router.push('/');
   }, [isAuthenticated, hasHydrated, router]);
 
   useEffect(() => {
-    if (profile?.preferences && !editedPrefs) {
-      setEditedPrefs(profile.preferences);
-    }
+    if (profile?.preferences && !editedPrefs) setEditedPrefs(profile.preferences);
   }, [profile?.preferences, editedPrefs]);
 
-  const handleSavePreferences = () => {
-    updatePrefsMutation.mutate(editedPrefs);
-  };
-
-  const toggleArrayItem = (array, item) => {
-    if (array.includes(item)) {
-      return array.filter(i => i !== item);
-    }
-    return [...array, item];
-  };
+  const handleSavePreferences = () => updatePrefsMutation.mutate(editedPrefs);
+  const toggleArrayItem = (array, item) => array.includes(item) ? array.filter(i => i !== item) : [...array, item];
 
   if (!hasHydrated || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-50">
+      <div className="min-h-screen bg-animated-gradient flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-[#ff6b35] animate-spin"></div>
+            <div className="absolute inset-2 rounded-full border-4 border-transparent border-t-[#f72585] animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.8s' }}></div>
+          </div>
+          <p className="mt-6 text-gray-400 font-medium">Loading your taste profile...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  if (!isAuthenticated) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-animated-gradient text-white relative overflow-hidden">
+      <Particles />
+      
       {/* Header */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-gray-900">
-            <span className="text-blue-600">Taste</span>Sync
-          </h1>
-          <div className="flex items-center gap-4">
-            <span className="text-gray-600">Hey, {profile?.username || user?.username}!</span>
-            <button
-              onClick={() => { logout(); router.push('/'); }}
-              className="text-sm text-gray-500 hover:text-gray-700"
-            >
-              Logout
-            </button>
+      <header className="relative z-10 border-b border-white/10">
+        <div className="max-w-7xl mx-auto px-6 py-4">
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#ff6b35] to-[#f72585] flex items-center justify-center text-xl animate-float">
+                🍜
+              </div>
+              <h1 className="text-2xl font-bold">
+                <span className="gradient-text">TasteSync</span>
+              </h1>
+            </div>
+            <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7209b7] to-[#f72585] flex items-center justify-center text-sm font-bold">
+                  {(profile?.username || user?.username || 'U').charAt(0).toUpperCase()}
+                </div>
+                <span className="text-white/80 font-medium hidden sm:block">{profile?.username || user?.username}</span>
+              </div>
+              <button
+                onClick={() => { logout(); router.push('/'); }}
+                className="text-white/50 hover:text-white transition-colors text-sm"
+              >
+                Logout
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 py-8 space-y-8">
-        {/* Quick Actions */}
-        <section className="grid md:grid-cols-2 gap-4">
-          <button
-            onClick={() => router.push('/lobby/create')}
-            className="bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-2xl p-6 text-left hover:shadow-lg transition-shadow"
-          >
-            <div className="text-3xl mb-2">🍽️</div>
-            <h2 className="text-xl font-bold mb-1">Create a Lobby</h2>
-            <p className="text-blue-100 text-sm">Start a new group dining session</p>
-          </button>
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8 space-y-8">
+        {/* Hero Section */}
+        <section className="relative overflow-hidden rounded-3xl glass-card p-8 md:p-12">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-[#ff6b35]/30 to-transparent rounded-full blur-3xl"></div>
+          <div className="absolute bottom-0 left-0 w-48 h-48 bg-gradient-to-tr from-[#f72585]/20 to-transparent rounded-full blur-3xl"></div>
           
-          <button
-            onClick={() => router.push('/lobby/join')}
-            className="bg-gradient-to-r from-green-600 to-teal-600 text-white rounded-2xl p-6 text-left hover:shadow-lg transition-shadow"
-          >
-            <div className="text-3xl mb-2">🤝</div>
-            <h2 className="text-xl font-bold mb-1">Join a Lobby</h2>
-            <p className="text-green-100 text-sm">Enter a code to join friends</p>
-          </button>
+          <div className="relative z-10">
+            <h2 className="text-3xl md:text-5xl font-bold mb-4">
+              Ready to find your <span className="gradient-text">perfect meal</span>?
+            </h2>
+            <p className="text-white/60 text-lg mb-8 max-w-xl">
+              Swipe, match, and discover the restaurant your whole group will love.
+            </p>
+            
+            <div className="grid sm:grid-cols-2 gap-4 max-w-2xl">
+              <button
+                onClick={() => router.push('/lobby/create')}
+                className="group relative overflow-hidden rounded-2xl p-6 bg-gradient-to-r from-[#ff6b35] to-[#f72585] hover:scale-[1.02] transition-all duration-300 glow-orange"
+              >
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                <div className="relative z-10 text-left">
+                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">🚀</div>
+                  <h3 className="text-xl font-bold mb-1">Create Lobby</h3>
+                  <p className="text-white/80 text-sm">Start a new group session</p>
+                </div>
+              </button>
+              
+              <button
+                onClick={() => router.push('/lobby/join')}
+                className="group relative overflow-hidden rounded-2xl p-6 bg-gradient-to-r from-[#7209b7] to-[#4cc9f0] hover:scale-[1.02] transition-all duration-300 glow-cyan"
+              >
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300"></div>
+                <div className="relative z-10 text-left">
+                  <div className="text-4xl mb-3 group-hover:scale-110 transition-transform">🎯</div>
+                  <h3 className="text-xl font-bold mb-1">Join Lobby</h3>
+                  <p className="text-white/80 text-sm">Enter code to join friends</p>
+                </div>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Stats Row */}
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { value: profile?.totalVisits || 0, label: 'Places Visited', icon: '🍽️', gradient: 'from-[#ff6b35] to-[#f72585]' },
+            { value: profile?.visits?.filter(v => v.rating >= 4).length || 0, label: 'Favorites', icon: '⭐', gradient: 'from-[#ffd60a] to-[#ff6b35]' },
+            { value: (profile?.preferences?.dietary_preferences || []).length, label: 'Preferences', icon: '🥗', gradient: 'from-[#4cc9f0] to-[#7209b7]' },
+            { value: new Set(profile?.visits?.map(v => v.restaurant_cuisine)).size || 0, label: 'Cuisines', icon: '🌍', gradient: 'from-[#7209b7] to-[#f72585]' },
+          ].map((stat, i) => (
+            <div key={i} className="glass-card rounded-2xl p-5 hover:scale-[1.02] transition-all duration-300 group">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${stat.gradient} flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition-transform`}>
+                {stat.icon}
+              </div>
+              <div className="text-3xl font-bold text-white mb-1">{stat.value}</div>
+              <div className="text-white/50 text-sm">{stat.label}</div>
+            </div>
+          ))}
         </section>
 
         {/* Preferences Section */}
-        <section className="bg-white rounded-2xl shadow-sm p-6">
-          <div className="flex justify-between items-center mb-6">
+        <section className="glass-card rounded-3xl p-6 md:p-8">
+          <div className="flex justify-between items-center mb-8">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Your Preferences</h2>
-              <p className="text-sm text-gray-500">Help us find better matches for you</p>
+              <h2 className="text-2xl font-bold text-white mb-1">Your Taste Profile</h2>
+              <p className="text-white/50">Fine-tune your preferences for better matches</p>
             </div>
             {!isEditingPrefs ? (
               <button
                 onClick={() => setIsEditingPrefs(true)}
-                className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg font-medium transition-colors"
+                className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all"
               >
                 Edit
               </button>
             ) : (
-              <div className="flex gap-2">
+              <div className="flex gap-3">
                 <button
                   onClick={() => { setIsEditingPrefs(false); setEditedPrefs(profile?.preferences); }}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg font-medium transition-colors"
+                  className="px-6 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-medium transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleSavePreferences}
                   disabled={updatePrefsMutation.isPending}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#ff6b35] to-[#f72585] text-white font-medium hover:opacity-90 disabled:opacity-50 transition-all"
                 >
                   {updatePrefsMutation.isPending ? 'Saving...' : 'Save'}
                 </button>
@@ -173,19 +222,19 @@ export default function DashboardPage() {
           </div>
 
           {isEditingPrefs && editedPrefs ? (
-            <div className="space-y-6">
+            <div className="space-y-8">
               {/* Spice Level */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Spice Tolerance</label>
-                <div className="flex gap-2 flex-wrap">
+                <label className="block text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">Spice Tolerance</label>
+                <div className="flex gap-3 flex-wrap">
                   {SPICE_LEVELS.map(option => (
                     <button
                       key={option.value}
                       onClick={() => setEditedPrefs({ ...editedPrefs, spice_level: option.value })}
-                      className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                      className={`px-5 py-3 rounded-xl font-medium transition-all ${
                         editedPrefs.spice_level === option.value
-                          ? 'border-blue-500 bg-blue-50 text-blue-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? `bg-gradient-to-r ${option.color} text-white scale-105`
+                          : 'bg-white/10 text-white/70 hover:bg-white/20'
                       }`}
                     >
                       {option.icon} {option.label}
@@ -196,16 +245,16 @@ export default function DashboardPage() {
 
               {/* Budget */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Budget</label>
-                <div className="flex gap-2 flex-wrap">
+                <label className="block text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">Budget</label>
+                <div className="flex gap-3 flex-wrap">
                   {BUDGET_OPTIONS.map(option => (
                     <button
                       key={option.value}
                       onClick={() => setEditedPrefs({ ...editedPrefs, budget: option.value })}
-                      className={`px-4 py-2 rounded-lg border-2 transition-all ${
+                      className={`px-5 py-3 rounded-xl font-medium transition-all ${
                         editedPrefs.budget === option.value
-                          ? 'border-green-500 bg-green-50 text-green-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? `bg-gradient-to-r ${option.color} text-white scale-105`
+                          : 'bg-white/10 text-white/70 hover:bg-white/20'
                       }`}
                     >
                       {option.icon} {option.label}
@@ -214,9 +263,9 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Dietary Preferences */}
+              {/* Dietary */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Dietary Preferences</label>
+                <label className="block text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">Dietary Preferences</label>
                 <div className="flex gap-2 flex-wrap">
                   {DIETARY_OPTIONS.map(option => (
                     <button
@@ -225,10 +274,10 @@ export default function DashboardPage() {
                         ...editedPrefs,
                         dietary_preferences: toggleArrayItem(editedPrefs.dietary_preferences || [], option)
                       })}
-                      className={`px-3 py-1.5 rounded-full text-sm border-2 transition-all ${
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         (editedPrefs.dietary_preferences || []).includes(option)
-                          ? 'border-purple-500 bg-purple-50 text-purple-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'bg-gradient-to-r from-[#4cc9f0] to-[#7209b7] text-white'
+                          : 'bg-white/10 text-white/70 hover:bg-white/20'
                       }`}
                     >
                       {option}
@@ -239,7 +288,7 @@ export default function DashboardPage() {
 
               {/* Allergies */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Allergies</label>
+                <label className="block text-sm font-semibold text-white/70 uppercase tracking-wider mb-4">Allergies</label>
                 <div className="flex gap-2 flex-wrap">
                   {ALLERGY_OPTIONS.map(option => (
                     <button
@@ -248,10 +297,10 @@ export default function DashboardPage() {
                         ...editedPrefs,
                         allergies: toggleArrayItem(editedPrefs.allergies || [], option)
                       })}
-                      className={`px-3 py-1.5 rounded-full text-sm border-2 transition-all ${
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                         (editedPrefs.allergies || []).includes(option)
-                          ? 'border-red-500 bg-red-50 text-red-700'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white'
+                          : 'bg-white/10 text-white/70 hover:bg-white/20'
                       }`}
                     >
                       {option}
@@ -262,124 +311,72 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="text-sm text-gray-500 mb-1">Spice Level</div>
-                <div className="font-medium text-gray-900">
-                  {SPICE_LEVELS.find(s => s.value === profile?.preferences?.spice_level)?.label || 'Medium'}
+              {[
+                { label: 'Spice Level', value: SPICE_LEVELS.find(s => s.value === profile?.preferences?.spice_level)?.label || 'Medium', icon: SPICE_LEVELS.find(s => s.value === profile?.preferences?.spice_level)?.icon || '🌶️', gradient: 'from-orange-500 to-red-500' },
+                { label: 'Budget', value: BUDGET_OPTIONS.find(b => b.value === profile?.preferences?.budget)?.label || 'Any', icon: BUDGET_OPTIONS.find(b => b.value === profile?.preferences?.budget)?.icon || '💰', gradient: 'from-green-500 to-emerald-500' },
+                { label: 'Dietary', value: (profile?.preferences?.dietary_preferences || []).length > 0 ? `${profile.preferences.dietary_preferences.length} set` : 'None', icon: '🥗', gradient: 'from-purple-500 to-pink-500' },
+                { label: 'Allergies', value: (profile?.preferences?.allergies || []).length > 0 ? `${profile.preferences.allergies.length} set` : 'None', icon: '⚠️', gradient: 'from-red-500 to-orange-500' },
+              ].map((item, i) => (
+                <div key={i} className="bg-white/5 rounded-2xl p-5 border border-white/10 hover:border-white/20 transition-all">
+                  <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${item.gradient} flex items-center justify-center text-lg mb-3`}>
+                    {item.icon}
+                  </div>
+                  <div className="text-white/50 text-sm mb-1">{item.label}</div>
+                  <div className="text-white font-semibold">{item.value}</div>
                 </div>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="text-sm text-gray-500 mb-1">Budget</div>
-                <div className="font-medium text-gray-900">
-                  {BUDGET_OPTIONS.find(b => b.value === profile?.preferences?.budget)?.label || 'Any'}
-                </div>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="text-sm text-gray-500 mb-1">Dietary</div>
-                <div className="font-medium text-gray-900">
-                  {(profile?.preferences?.dietary_preferences || []).length > 0
-                    ? profile.preferences.dietary_preferences.slice(0, 2).join(', ') + 
-                      (profile.preferences.dietary_preferences.length > 2 ? '...' : '')
-                    : 'None set'}
-                </div>
-              </div>
-              <div className="bg-gray-50 rounded-xl p-4">
-                <div className="text-sm text-gray-500 mb-1">Allergies</div>
-                <div className="font-medium text-gray-900">
-                  {(profile?.preferences?.allergies || []).length > 0
-                    ? profile.preferences.allergies.slice(0, 2).join(', ') +
-                      (profile.preferences.allergies.length > 2 ? '...' : '')
-                    : 'None set'}
-                </div>
-              </div>
+              ))}
             </div>
           )}
         </section>
 
         {/* Visit History */}
-        <section className="bg-white rounded-2xl shadow-sm p-6">
+        <section className="glass-card rounded-3xl p-6 md:p-8">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Recent Visits</h2>
-              <p className="text-sm text-gray-500">Places you&apos;ve been to with your groups</p>
+              <h2 className="text-2xl font-bold text-white mb-1">Recent Visits</h2>
+              <p className="text-white/50">Your culinary journey so far</p>
             </div>
             {(profile?.totalVisits || 0) > 0 && (
-              <span className="text-sm text-gray-500">{profile.totalVisits} total visits</span>
+              <span className="px-4 py-2 rounded-full bg-white/10 text-white/70 text-sm font-medium">
+                {profile.totalVisits} total
+              </span>
             )}
           </div>
 
           {(profile?.visits || []).length > 0 ? (
-            <div className="space-y-4">
-              {profile.visits.map((visit) => (
+            <div className="grid gap-4">
+              {profile.visits.map((visit, idx) => (
                 <div 
-                  key={visit.id} 
-                  className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                  key={visit.id}
+                  className="group flex items-center gap-4 p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-[#ff6b35]/50 hover:bg-white/10 transition-all"
+                  style={{ animationDelay: `${idx * 100}ms` }}
                 >
-                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-red-500 rounded-xl flex items-center justify-center text-white text-xl">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#ff6b35] to-[#f72585] flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
                     🍜
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">{visit.restaurant_name}</h3>
-                        <p className="text-sm text-gray-500">{visit.restaurant_cuisine}</p>
-                      </div>
-                      {visit.rating && (
-                        <div className="flex items-center gap-1 bg-yellow-100 px-2 py-1 rounded-full">
-                          <span className="text-yellow-600">⭐</span>
-                          <span className="text-sm font-medium text-yellow-700">{visit.rating}/5</span>
-                        </div>
-                      )}
+                    <h3 className="font-semibold text-white truncate">{visit.restaurant_name}</h3>
+                    <p className="text-white/50 text-sm">{visit.restaurant_cuisine}</p>
+                  </div>
+                  {visit.rating && (
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#ffd60a]/20 to-[#ff6b35]/20 border border-[#ffd60a]/30">
+                      <span>⭐</span>
+                      <span className="text-[#ffd60a] font-semibold">{visit.rating}</span>
                     </div>
-                    {visit.review && (
-                      <p className="mt-2 text-sm text-gray-600 line-clamp-2">{visit.review}</p>
-                    )}
-                    <p className="mt-1 text-xs text-gray-400">
-                      {new Date(visit.visited_at).toLocaleDateString('en-US', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      })}
-                    </p>
+                  )}
+                  <div className="text-white/30 text-sm hidden sm:block">
+                    {new Date(visit.visited_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                   </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <div className="text-4xl mb-3">🍽️</div>
-              <p className="text-gray-500">No visits yet</p>
-              <p className="text-sm text-gray-400 mt-1">
-                Complete a group dining session to see your history here
-              </p>
+            <div className="text-center py-16">
+              <div className="text-6xl mb-4 animate-float">🍽️</div>
+              <p className="text-white/50 text-lg mb-2">No visits yet</p>
+              <p className="text-white/30 text-sm">Complete a group session to see your history</p>
             </div>
           )}
-        </section>
-
-        {/* Stats */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-            <div className="text-3xl font-bold text-blue-600">{profile?.totalVisits || 0}</div>
-            <div className="text-sm text-gray-500">Restaurants Visited</div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-            <div className="text-3xl font-bold text-green-600">
-              {profile?.visits?.filter(v => v.rating >= 4).length || 0}
-            </div>
-            <div className="text-sm text-gray-500">Favorites (4+ stars)</div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-            <div className="text-3xl font-bold text-purple-600">
-              {(profile?.preferences?.dietary_preferences || []).length}
-            </div>
-            <div className="text-sm text-gray-500">Dietary Preferences</div>
-          </div>
-          <div className="bg-white rounded-xl shadow-sm p-4 text-center">
-            <div className="text-3xl font-bold text-orange-600">
-              {new Set(profile?.visits?.map(v => v.restaurant_cuisine)).size || 0}
-            </div>
-            <div className="text-sm text-gray-500">Cuisines Explored</div>
-          </div>
         </section>
       </main>
     </div>

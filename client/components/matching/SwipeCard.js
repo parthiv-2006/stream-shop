@@ -26,132 +26,132 @@ export function SwipeCard({ restaurant, onSwipe, index, isTop }) {
     }
   };
 
-  const rotation = dragDirection === 'right' ? 15 : dragDirection === 'left' ? -15 : 0;
-  const opacity = isTop ? 1 : 0.7;
+  const rotation = dragDirection === 'right' ? 12 : dragDirection === 'left' ? -12 : 0;
 
   return (
     <motion.div
-      className="absolute inset-0 bg-white rounded-2xl shadow-2xl overflow-hidden cursor-grab active:cursor-grabbing"
+      className="absolute inset-0 rounded-3xl overflow-hidden cursor-grab active:cursor-grabbing"
       style={{
         zIndex: 10 - index,
-        opacity,
+        opacity: isTop ? 1 : Math.max(0.3, 0.8 - index * 0.15),
+        transformOrigin: 'center bottom',
       }}
-      drag="x"
+      drag={isTop ? 'x' : false}
       dragConstraints={{ left: 0, right: 0 }}
-      dragElastic={0.2}
+      dragElastic={0.15}
       onDrag={handleDrag}
       onDragEnd={handleDragEnd}
       animate={{
         rotate: rotation,
-        scale: isTop ? 1 : 0.95,
+        scale: isTop ? 1 : 0.95 - index * 0.03,
+        y: index * 8,
       }}
       transition={{
         type: 'spring',
-        stiffness: 300,
-        damping: 30,
+        stiffness: 400,
+        damping: 35,
       }}
     >
-      {/* Swipe indicators */}
-      {dragDirection && (
-        <motion.div
-          className={`absolute inset-0 flex items-center justify-center text-6xl font-bold z-10 ${
-            dragDirection === 'right' ? 'bg-green-500/20 text-green-600' : 'bg-red-500/20 text-red-600'
-          }`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-        >
-          {dragDirection === 'right' ? '✓' : '✗'}
-        </motion.div>
-      )}
-
-      {/* Restaurant image */}
-      <div className="relative h-64 bg-gradient-to-br from-gray-200 to-gray-300">
-        {restaurant.image ? (
-          <img
-            src={restaurant.image}
-            alt={restaurant.name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-gray-400">
-            <svg className="w-24 h-24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
-          </div>
-        )}
-        
-        {/* Price range badge */}
-        {restaurant.price_range && (
-          <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold">
-            {restaurant.price_range}
-          </div>
+      {/* Main Card */}
+      <div className="relative h-full bg-gradient-to-br from-[#1a1a2e] to-[#16213e] border border-white/10 rounded-3xl overflow-hidden">
+        {/* Swipe Overlays */}
+        {dragDirection && (
+          <motion.div
+            className={`absolute inset-0 flex items-center justify-center z-20 ${
+              dragDirection === 'right' 
+                ? 'bg-gradient-to-r from-green-500/30 to-transparent' 
+                : 'bg-gradient-to-l from-red-500/30 to-transparent'
+            }`}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+          >
+            <div className={`text-8xl ${dragDirection === 'right' ? 'text-green-400' : 'text-red-400'}`}>
+              {dragDirection === 'right' ? '💚' : '❌'}
+            </div>
+          </motion.div>
         )}
 
-        {/* Rating badge */}
-        {restaurant.rating && (
-          <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1">
-            <span>⭐</span>
-            <span>{restaurant.rating.toFixed(1)}</span>
-          </div>
-        )}
-      </div>
+        {/* Image Area */}
+        <div className="relative h-56 bg-gradient-to-br from-[#ff6b35]/20 to-[#f72585]/20">
+          {restaurant.image ? (
+            <img
+              src={restaurant.image}
+              alt={restaurant.name}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-7xl opacity-50">🍽️</div>
+            </div>
+          )}
+          
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a2e] via-transparent to-transparent"></div>
+          
+          {/* Price Badge */}
+          {restaurant.price_range && (
+            <div className="absolute top-4 right-4 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-bold">
+              {restaurant.price_range}
+            </div>
+          )}
 
-      {/* Restaurant info */}
-      <div className="p-6">
-        <div className="mb-2">
-          <h3 className="text-2xl font-bold text-gray-900 mb-1">{restaurant.name}</h3>
-          <p className="text-lg text-blue-600 font-medium">{restaurant.cuisine}</p>
-        </div>
-
-        {restaurant.description && (
-          <p className="text-gray-600 mb-4 line-clamp-2">{restaurant.description}</p>
-        )}
-
-        {/* Tags */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {restaurant.dietary_options?.slice(0, 3).map((option, idx) => (
-            <span
-              key={idx}
-              className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full"
-            >
-              {option}
-            </span>
-          ))}
-          {restaurant.spice_level && (
-            <span className="px-2 py-1 bg-orange-100 text-orange-700 text-xs rounded-full">
-              {restaurant.spice_level} spice
-            </span>
+          {/* Rating Badge */}
+          {restaurant.rating && (
+            <div className="absolute top-4 left-4 px-3 py-1.5 rounded-full bg-gradient-to-r from-[#ffd60a]/20 to-[#ff6b35]/20 backdrop-blur-md border border-[#ffd60a]/30 flex items-center gap-1.5">
+              <span className="text-[#ffd60a]">⭐</span>
+              <span className="text-white font-bold">{restaurant.rating.toFixed(1)}</span>
+            </div>
           )}
         </div>
 
-        {/* Location */}
-        {restaurant.location?.address && (
-          <p className="text-sm text-gray-500 flex items-center gap-1">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-            </svg>
-            {restaurant.location.address}
-          </p>
-        )}
-      </div>
+        {/* Restaurant Info */}
+        <div className="p-5">
+          <div className="mb-3">
+            <h3 className="text-2xl font-bold text-white mb-1 truncate">{restaurant.name}</h3>
+            <p className="text-lg font-medium bg-gradient-to-r from-[#ff6b35] to-[#f72585] bg-clip-text text-transparent">
+              {restaurant.cuisine}
+            </p>
+          </div>
 
-      {/* Swipe hints */}
-      {isTop && !dragDirection && (
-        <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-8 text-sm text-gray-400">
-          <div className="flex items-center gap-2">
-            <span className="text-red-500">←</span>
-            <span>Pass</span>
+          {restaurant.description && (
+            <p className="text-white/50 text-sm mb-4 line-clamp-2">{restaurant.description}</p>
+          )}
+
+          {/* Tags */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            {restaurant.dietary_options?.slice(0, 3).map((option, idx) => (
+              <span
+                key={idx}
+                className="px-2.5 py-1 rounded-full bg-[#4cc9f0]/20 text-[#4cc9f0] text-xs font-medium border border-[#4cc9f0]/30"
+              >
+                {option}
+              </span>
+            ))}
+            {restaurant.spice_level && (
+              <span className="px-2.5 py-1 rounded-full bg-[#ff6b35]/20 text-[#ff6b35] text-xs font-medium border border-[#ff6b35]/30">
+                {restaurant.spice_level} spice
+              </span>
+            )}
           </div>
-          <div className="flex items-center gap-2">
-            <span>Like</span>
-            <span className="text-green-500">→</span>
-          </div>
+
+          {/* Location */}
+          {restaurant.location?.address && (
+            <div className="flex items-center gap-2 text-white/40 text-sm">
+              <svg className="w-4 h-4 text-[#f72585]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              <span className="truncate">{restaurant.location.address}</span>
+            </div>
+          )}
         </div>
-      )}
+
+        {/* Bottom Gradient */}
+        <div className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-[#1a1a2e] to-transparent pointer-events-none"></div>
+      </div>
     </motion.div>
   );
 }
