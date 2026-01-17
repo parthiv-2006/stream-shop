@@ -52,6 +52,45 @@ const participantSchema = new mongoose.Schema({
   },
 }, { _id: false });
 
+// Swipe records for matching phase
+const swipeSchema = new mongoose.Schema({
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  restaurant_id: {
+    type: String,
+    required: true,
+  },
+  direction: {
+    type: String,
+    enum: ['left', 'right'],
+    required: true,
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+}, { _id: false });
+
+// Vote records for voting phase
+const voteSchema = new mongoose.Schema({
+  user_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
+  restaurant_id: {
+    type: String,
+    required: true,
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now,
+  },
+}, { _id: false });
+
 const lobbySchema = new mongoose.Schema({
   code: {
     type: String,
@@ -80,46 +119,14 @@ const lobbySchema = new mongoose.Schema({
   matchingRestaurants: [{
     type: String, // Restaurant IDs
   }],
-  votes: [{
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    restaurant_id: {
-      type: String, // Can be ObjectId or external ID
-      required: true,
-    },
-    vote: {
-      type: String,
-      enum: ['yes', 'no'],
-      required: true,
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-    },
-  }],
+  // Swipe records for matching phase
+  swipes: [swipeSchema],
   // Restaurants that everyone swiped right on (for voting)
   consensusRestaurants: [{
     type: String, // Restaurant IDs
   }],
   // Votes for final restaurant selection
-  votes: [{
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    restaurant_id: {
-      type: String,
-      required: true,
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-    },
-  }],
+  votes: [voteSchema],
   // Final winning restaurant
   winningRestaurant: {
     type: String,
