@@ -3,6 +3,7 @@ const User = require('../models/User');
 const Restaurant = require('../models/Restaurant');
 const gemini = require('../utils/gemini');
 const yelp = require('../utils/yelp');
+const { getBusinessDetails } = require('../utils/yelp');
 const generateLobbyCode = require('../utils/generateCode');
 const AppError = require('../utils/errors');
 
@@ -266,6 +267,11 @@ exports.startMatching = async (req, res, next) => {
         }
 
         const yelpCandidates = await yelp.searchBusinesses(searchOpts);
+        
+        // Debug: Log image URLs from Yelp
+        const candidatesWithImages = yelpCandidates.filter(c => c.image_url).length;
+        console.log(`StartMatching: Yelp returned ${yelpCandidates.length} candidates, ${candidatesWithImages} have images`);
+        
         const ranked = await gemini.generateRecommendations(preferences.length ? preferences : {}, yelpCandidates);
 
         const candidateMap = new Map(yelpCandidates.map(c => [c.name, c]));
@@ -289,19 +295,52 @@ exports.startMatching = async (req, res, next) => {
           if (!c || !c.name) continue;
           const existing = await Restaurant.findOne({ external_id: c.id });
           if (existing) {
+            // Update image if missing or refresh from Yelp
+            let imageUrl = (c.image_url && c.image_url.trim()) || null;
+            console.log(`StartMatching: Existing restaurant ${c.name}, current image: ${existing.image || 'none'}, Yelp image: ${imageUrl || 'none'}`);
+            
+            // If restaurant has no image, try to get it from Yelp
+            if (!existing.image && !imageUrl && c.id) {
+              console.log(`StartMatching: Fetching business details for existing ${c.name} (ID: ${c.id}) to get photos...`);
+              const details = await getBusinessDetails(c.id);
+              if (details && details.image_url) {
+                imageUrl = details.image_url;
+                existing.image = imageUrl;
+                console.log(`✅ StartMatching: Updated image for ${c.name}: ${imageUrl.substring(0, 50)}...`);
+              }
+            } else if (imageUrl && existing.image !== imageUrl) {
+              // Update image if Yelp has a newer/different one
+              existing.image = imageUrl;
+              console.log(`🔄 StartMatching: Refreshed image for ${c.name}`);
+            }
+            
             if (meta && meta.reason) {
               existing.description = (existing.description ? existing.description + ' — ' : '') + meta.reason;
-              await existing.save();
             }
+            await existing.save();
             upserted.push(existing);
             } else {
               try {
                 const cuisineFromCat = (c.categories && c.categories[0] && c.categories[0].title) || 'Various';
+                let imageUrl = (c.image_url && c.image_url.trim()) || null;
+                
+                // If no image from search, try fetching business details for photos
+                if (!imageUrl && c.id) {
+                  console.log(`StartMatching: Fetching business details for ${c.name} (ID: ${c.id}) to get photos...`);
+                  const details = await getBusinessDetails(c.id);
+                  if (details && details.image_url) {
+                    imageUrl = details.image_url;
+                    console.log(`✅ StartMatching: Found image for ${c.name}: ${imageUrl.substring(0, 50)}...`);
+                  } else {
+                    console.log(`⚠️  StartMatching: No image URL for restaurant: ${c.name} (Yelp ID: ${c.id})`);
+                  }
+                }
+                
                 const created = await Restaurant.create({
                   name: c.name,
                   cuisine: cuisineFromCat,
                   description: ((c.url || '') + (meta && meta.reason ? ` — ${meta.reason}` : '')),
-                  image: c.image_url || '',
+                  image: imageUrl,
                   price_range: c.price || undefined,
                   location: c.location || {},
                   rating: c.rating || undefined,
@@ -320,9 +359,15 @@ exports.startMatching = async (req, res, next) => {
         }
 
         if (upserted.length > 0) {
-          lobby.matchingRestaurants = upserted.map(r => r._id.toString());
-          await lobby.save();
-          console.log(`StartMatching: enriched and upserted ${upserted.length} restaurants for lobby ${lobbyId}`);
+          // Reload lobby to avoid version conflicts
+          const freshLobby = await Lobby.findById(lobbyId);
+          if (freshLobby) {
+            freshLobby.matchingRestaurants = upserted.map(r => r._id.toString());
+            await freshLobby.save();
+            console.log(`StartMatching: enriched and upserted ${upserted.length} restaurants for lobby ${lobbyId}`);
+          } else {
+            console.warn(`Could not reload lobby ${lobbyId} to save matchingRestaurants`);
+          }
         }
       }
     } catch (err) {
@@ -485,6 +530,10 @@ exports.getRestaurants = async (req, res, next) => {
             searchOpts.location = rawLocation;
           }
           const yelpCandidates = await yelp.searchBusinesses(searchOpts);
+          
+          // Debug: Log image URLs from Yelp
+          const candidatesWithImages = yelpCandidates.filter(c => c.image_url).length;
+          console.log(`Yelp returned ${yelpCandidates.length} candidates, ${candidatesWithImages} have images`);
 
           // Use Gemini to rank/enrich candidates based on group preferences
           const ranked = await gemini.generateRecommendations(preferences.length ? preferences : {}, yelpCandidates);
@@ -515,20 +564,53 @@ exports.getRestaurants = async (req, res, next) => {
             if (!c || !c.name) continue;
             const existing = await Restaurant.findOne({ external_id: c.id });
             if (existing) {
+              // Update image if missing or refresh from Yelp
+              let imageUrl = (c.image_url && c.image_url.trim()) || null;
+              console.log(`Existing restaurant ${c.name}, current image: ${existing.image || 'none'}, Yelp image: ${imageUrl || 'none'}`);
+              
+              // If restaurant has no image, try to get it from Yelp
+              if (!existing.image && !imageUrl && c.id) {
+                console.log(`Fetching business details for existing ${c.name} (ID: ${c.id}) to get photos...`);
+                const details = await getBusinessDetails(c.id);
+                if (details && details.image_url) {
+                  imageUrl = details.image_url;
+                  existing.image = imageUrl;
+                  console.log(`✅ Updated image for ${c.name}: ${imageUrl.substring(0, 50)}...`);
+                }
+              } else if (imageUrl && existing.image !== imageUrl) {
+                // Update image if Yelp has a newer/different one
+                existing.image = imageUrl;
+                console.log(`🔄 Refreshed image for ${c.name}`);
+              }
+              
               // attach meta.reason to description if present
               if (meta && meta.reason) {
                 existing.description = (existing.description ? existing.description + ' — ' : '') + meta.reason;
-                await existing.save();
               }
+              await existing.save();
               upserted.push(existing);
             } else {
               try {
                 const cuisineFromCat = (c.categories && c.categories[0] && c.categories[0].title) || 'Various';
+                let imageUrl = (c.image_url && c.image_url.trim()) || null;
+                console.log(imageUrl);
+                // If no image from search, try fetching business details for photos
+                if (!imageUrl && c.id) {
+                  console.log(`Fetching business details for ${c.name} (ID: ${c.id}) to get photos...`);
+                  const details = await getBusinessDetails(c.id);
+                  if (details && details.image_url) {
+                    imageUrl = details.image_url;
+                    console.log(`✅ Found image for ${c.name}: ${imageUrl.substring(0, 50)}...`);
+                  } else {
+                    console.log(`⚠️  No image URL for restaurant: ${c.name} (Yelp ID: ${c.id})`);
+                  }
+                }
+                
                 const created = await Restaurant.create({
                   name: c.name,
                   cuisine: cuisineFromCat,
                   description: ((c.url || '') + (meta && meta.reason ? ` — ${meta.reason}` : '')),
-                  image: c.image_url || '',
+                  image: imageUrl,
                   price_range: c.price || undefined,
                   location: c.location || {},
                   rating: c.rating || undefined,
@@ -548,9 +630,15 @@ exports.getRestaurants = async (req, res, next) => {
 
           if (upserted.length > 0) {
             restaurants = upserted;
-            lobby.matchingRestaurants = restaurants.map(r => r._id.toString());
-            await lobby.save();
-            console.log(`Enriched and upserted ${upserted.length} restaurants for lobby ${lobbyId}`);
+            // Reload lobby to avoid version conflicts
+            const freshLobby = await Lobby.findById(lobbyId);
+            if (freshLobby) {
+              freshLobby.matchingRestaurants = restaurants.map(r => r._id.toString());
+              await freshLobby.save();
+              console.log(`Enriched and upserted ${upserted.length} restaurants for lobby ${lobbyId}`);
+            } else {
+              console.warn(`Could not reload lobby ${lobbyId} to save matchingRestaurants`);
+            }
           }
         } catch (err) {
           console.warn('Yelp/Gemini enrichment failed:', err.message || err);
@@ -563,8 +651,14 @@ exports.getRestaurants = async (req, res, next) => {
         restaurants = await Restaurant.find({}).limit(20);
 
         // Store the restaurant IDs for this matching session
-        lobby.matchingRestaurants = restaurants.map(r => r._id.toString());
-        await lobby.save();
+        // Reload lobby to avoid version conflicts
+        const freshLobby = await Lobby.findById(lobbyId);
+        if (freshLobby) {
+          freshLobby.matchingRestaurants = restaurants.map(r => r._id.toString());
+          await freshLobby.save();
+        } else {
+          console.warn(`Could not reload lobby ${lobbyId} to save matchingRestaurants`);
+        }
       }
     }
 
@@ -580,7 +674,7 @@ exports.getRestaurants = async (req, res, next) => {
         name: r.name,
         cuisine: r.cuisine,
         description: r.description,
-        image: r.image || null,
+        image: (r.image && r.image.trim()) || null,
         price_range: r.price_range,
         location: r.location,
         rating: r.rating,

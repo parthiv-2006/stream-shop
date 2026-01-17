@@ -45,14 +45,28 @@ const parseJsonFromText = (text) => {
 async function generateRecommendations(prefs = {}, candidates = []) {
   const prompt = buildPrompt(prefs, candidates);
 
+  // Log what we're sending to Gemini (for debugging)
+  console.log('📤 Sending to Gemini API:');
+  console.log('Preferences:', JSON.stringify(prefs, null, 2));
+  console.log('Candidates count:', candidates.length);
+  console.log('Prompt length:', prompt.length, 'characters');
+  console.log('Prompt preview:', prompt.substring(0, 200) + '...');
+
   const url = process.env.GEMINI_API_URL;
   const key = process.env.GEMINI_API_KEY;
 
-  if (url && key) {
+  // Only try Gemini API if both URL and key are properly configured
+  // Skip if URL looks invalid (contains :generateText which is wrong)
+  if (url && key && !url.includes(':generateText')) {
     // Try several request shapes / endpoints to increase compatibility with
     // different Gemini-style providers. If all attempts 4xx/5xx out, fall
     // back to deterministic candidate-based generator below.
+    // Google Gemini API expects { contents: [{ parts: [{ text: prompt }] }] }
+    // Try multiple body formats for compatibility
     const tryBodies = [
+      // Google Gemini API format
+      { contents: [{ parts: [{ text: prompt }] }] },
+      // Alternative formats for other providers
       { input: prompt },
       { prompt },
       { text: prompt },
@@ -60,29 +74,70 @@ async function generateRecommendations(prefs = {}, candidates = []) {
       ...(process.env.GEMINI_MODEL ? [{ model: process.env.GEMINI_MODEL, input: prompt }] : []),
     ];
 
+    // Build URLs to try - support both Google Gemini API and custom endpoints
     const tryUrls = [
       url,
       `${url.replace(/\/$/, '')}/generate`,
       `${url.replace(/\/$/, '')}/v1/generate`,
-      ...(process.env.GEMINI_MODEL ? [`${url.replace(/\/$/, '')}/v1/models/${process.env.GEMINI_MODEL}/generate`] : []),
+      ...(process.env.GEMINI_MODEL ? [
+        `${url.replace(/\/$/, '')}/v1/models/${process.env.GEMINI_MODEL}/generateContent`,
+        `${url.replace(/\/$/, '')}/v1/models/${process.env.GEMINI_MODEL}/generate`,
+      ] : []),
+      // Google Gemini API standard endpoint
+      ...(process.env.GEMINI_MODEL && url.includes('generativelanguage') ? [
+        `https://generativelanguage.googleapis.com/v1/models/${process.env.GEMINI_MODEL}:generateContent`,
+      ] : []),
     ];
 
     let lastError = null;
+    let hasLogged401 = false; // Track if we've already logged a 401 to reduce spam
+    
     for (const u of tryUrls) {
       for (const body of tryBodies) {
         try {
-          const res = await axios.post(u, body, {
-            headers: {
-              Authorization: `Bearer ${key}`,
-              'Content-Type': 'application/json',
-            },
+          // Google Gemini API uses API key as query parameter, not Bearer token
+          // Try both methods for compatibility
+          const isGoogleEndpoint = u.includes('generativelanguage.googleapis.com');
+          const headers = {
+            'Content-Type': 'application/json',
+          };
+          
+          // For Google endpoints, use query param; for others, try Bearer token
+          const urlWithKey = isGoogleEndpoint 
+            ? `${u}?key=${key}`
+            : u;
+          
+          if (!isGoogleEndpoint) {
+            headers.Authorization = `Bearer ${key}`;
+          }
+          
+          // Log the exact request being sent (first attempt only to avoid spam)
+          if (u === tryUrls[0] && body === tryBodies[0]) {
+            console.log('📡 Gemini API Request:');
+            console.log('URL:', urlWithKey.substring(0, 100) + '...');
+            console.log('Body:', JSON.stringify(body, null, 2));
+          }
+          
+          const res = await axios.post(urlWithKey, body, {
+            headers,
             timeout: 15000,
           });
 
           const data = res.data;
           if (!data) throw new Error('Empty response from Gemini endpoint');
 
-          // reuse existing parsing heuristics
+          // Google Gemini API response format: { candidates: [{ content: { parts: [{ text: "..." }] } }] }
+          if (data.candidates && Array.isArray(data.candidates) && data.candidates[0]) {
+            const candidate = data.candidates[0];
+            const content = candidate.content;
+            if (content && content.parts && Array.isArray(content.parts)) {
+              const text = content.parts.map(p => p.text || '').join('\n');
+              const parsed = parseJsonFromText(text);
+              if (parsed) return parsed;
+            }
+          }
+
+          // Other provider formats
           if (data.output && Array.isArray(data.output) && data.output[0] && data.output[0].content) {
             const text = data.output[0].content.map(c => c.text || c).join('\n');
             const parsed = parseJsonFromText(text);
@@ -109,20 +164,31 @@ async function generateRecommendations(prefs = {}, candidates = []) {
           console.warn(lastError.message);
         } catch (err) {
           lastError = err;
-          // If we got a 404 specifically, log the attempted URL to help debugging
-          if (err && err.response && err.response.status === 404) {
-            console.warn(`Gemini endpoint returned 404 for ${u} (tried body shapes). Check GEMINI_API_URL and that it includes the model/path.`);
-          } else if (err && err.response) {
-            console.warn(`Gemini request to ${u} failed with status ${err.response.status}`);
-          } else {
+          // Only log errors for non-404s/401s or log 401 once to reduce spam
+          if (err && err.response) {
+            if (err.response.status === 401 && !hasLogged401) {
+              console.warn('⚠️  Gemini API authentication failed (401). Check GEMINI_API_KEY. Using fallback recommendations.');
+              hasLogged401 = true;
+            } else if (err.response.status !== 404 && err.response.status !== 401) {
+              console.warn(`Gemini request to ${u} failed with status ${err.response.status}`);
+            }
+          } else if (err && !err.response) {
+            // Network errors are worth logging
             console.warn('Gemini request error:', err.message || err);
           }
+          // Silently skip 404s and 401s after first log as they're expected during discovery
           // try next combination
         }
       }
     }
 
-    if (lastError) console.error('Gemini API error (all attempts):', lastError.message || lastError);
+    if (lastError && lastError.response?.status !== 404) {
+      // Only log if it's not just 404s (which means API not configured)
+      console.warn('Gemini API not available or misconfigured, using fallback recommendations');
+    }
+  } else if (url && url.includes(':generateText')) {
+    // User has misconfigured URL - warn once
+    console.warn('⚠️  GEMINI_API_URL appears incorrect (contains :generateText). Gemini API disabled. Using fallback recommendations.');
   }
 
   if (Array.isArray(candidates) && candidates.length) {

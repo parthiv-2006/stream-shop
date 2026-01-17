@@ -18,7 +18,17 @@ JWT_SECRET=your_secret_key_here
 RP_ID=localhost
 RP_NAME=TasteSync
 RP_ORIGIN=http://localhost:3000
+
+# Optional: For real restaurant data from Yelp API
+YELP_API_KEY=your_yelp_api_key_here
+
+# Optional: For AI-powered restaurant recommendations
+GEMINI_API_KEY=your_gemini_api_key_here
+GEMINI_API_URL=your_gemini_api_url_here
+GEMINI_MODEL=your_gemini_model_name_here
 ```
+
+**Note:** Without `YELP_API_KEY`, the system will use hard-coded sample restaurants from the database. To use real restaurant data, you must set `YELP_API_KEY` with a valid Yelp Fusion API key.
 
 3. Start development server:
 ```bash
