@@ -18,13 +18,36 @@ export const lobbyApi = {
     method: 'POST',
     body: JSON.stringify({ restaurantId, direction }),
   }),
+
+  // Voting endpoints
+  getVotingData: (lobbyId) => apiRequest(`/lobby/${lobbyId}/voting`),
   
-  submitVote: (lobbyId, restaurantId, vote) => apiRequest(`/lobby/${lobbyId}/vote`, {
+  vote: (lobbyId, restaurantId) => apiRequest(`/lobby/${lobbyId}/vote`, {
     method: 'POST',
-    body: JSON.stringify({ restaurantId, vote }),
+    body: JSON.stringify({ restaurantId }),
   }),
   
-  getVotes: (lobbyId) => apiRequest(`/lobby/${lobbyId}/votes`),
-  
   getResults: (lobbyId) => apiRequest(`/lobby/${lobbyId}/results`),
+
+  // Session management endpoints
+  resetLobby: (lobbyId) => apiRequest(`/lobby/${lobbyId}/reset`, {
+    method: 'POST',
+  }),
+  
+  leaveLobby: (lobbyId) => apiRequest(`/lobby/${lobbyId}/leave`, {
+    method: 'POST',
+  }),
+
+  revoteLobby: (lobbyId, useTiedOnly = false) => apiRequest(`/lobby/${lobbyId}/revote`, {
+    method: 'POST',
+    body: JSON.stringify({ useTiedOnly }),
+  }),
+
+  // Vibe Check endpoints
+  getVibeCheckStatus: (lobbyId) => apiRequest(`/lobby/${lobbyId}/vibe-check`),
+  
+  submitVibeCheck: (lobbyId, vibeCheck) => apiRequest(`/lobby/${lobbyId}/vibe-check`, {
+    method: 'POST',
+    body: JSON.stringify(vibeCheck),
+  }),
 };

@@ -7,9 +7,14 @@ const {
   startMatching,
   getRestaurants,
   recordSwipe,
+  getVotingData,
   submitVote,
-  getVotes,
   getResults,
+  resetLobby,
+  leaveLobby,
+  revoteLobby,
+  submitVibeCheck,
+  getVibeCheckStatus,
 } = require('../controllers/lobby.controller');
 const authenticate = require('../middleware/auth.middleware');
 
@@ -20,8 +25,19 @@ router.get('/:lobbyId', authenticate(true), getLobby);
 router.post('/:lobbyId/start-matching', authenticate(true), startMatching);
 router.get('/:lobbyId/restaurants', authenticate(true), getRestaurants);
 router.post('/:lobbyId/swipe', authenticate(true), recordSwipe);
+
+// Vibe Check endpoints
+router.get('/:lobbyId/vibe-check', authenticate(true), getVibeCheckStatus);
+router.post('/:lobbyId/vibe-check', authenticate(true), submitVibeCheck);
+
+// Voting endpoints
+router.get('/:lobbyId/voting', authenticate(true), getVotingData);
 router.post('/:lobbyId/vote', authenticate(true), submitVote);
-router.get('/:lobbyId/votes', authenticate(true), getVotes);
 router.get('/:lobbyId/results', authenticate(true), getResults);
+
+// Session management endpoints
+router.post('/:lobbyId/reset', authenticate(true), resetLobby);
+router.post('/:lobbyId/leave', authenticate(true), leaveLobby);
+router.post('/:lobbyId/revote', authenticate(true), revoteLobby);
 
 module.exports = router;

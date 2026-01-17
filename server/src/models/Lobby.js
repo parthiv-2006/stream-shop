@@ -1,5 +1,29 @@
 const mongoose = require('mongoose');
 
+// Session-specific preferences (Vibe Check)
+const vibeCheckSchema = new mongoose.Schema({
+  meal_type: {
+    type: String,
+    enum: ['light', 'moderate', 'heavy', 'any'],
+    default: null,
+  },
+  budget_today: {
+    type: String,
+    enum: ['cheap', 'moderate', 'fancy', 'any'],
+    default: null,
+  },
+  mood: {
+    type: String,
+    enum: ['adventurous', 'comfort', 'healthy', 'indulgent', 'any'],
+    default: null,
+  },
+  distance: {
+    type: String,
+    enum: ['nearby', 'moderate', 'anywhere'],
+    default: null,
+  },
+}, { _id: false });
+
 const participantSchema = new mongoose.Schema({
   user_id: {
     type: mongoose.Schema.Types.ObjectId,
@@ -17,6 +41,10 @@ const participantSchema = new mongoose.Schema({
   isReady: {
     type: Boolean,
     default: false,
+  },
+  vibeCheck: {
+    type: vibeCheckSchema,
+    default: null,
   },
   joinedAt: {
     type: Date,
@@ -48,25 +76,9 @@ const lobbySchema = new mongoose.Schema({
   restaurants: [{
     type: mongoose.Schema.Types.Mixed,
   }],
-  swipes: [{
-    user_id: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true,
-    },
-    restaurant_id: {
-      type: String, // Can be ObjectId or external ID
-      required: true,
-    },
-    direction: {
-      type: String,
-      enum: ['left', 'right'],
-      required: true,
-    },
-    timestamp: {
-      type: Date,
-      default: Date.now,
-    },
+  // Restaurants assigned for this matching session
+  matchingRestaurants: [{
+    type: String, // Restaurant IDs
   }],
   votes: [{
     user_id: {
@@ -88,8 +100,33 @@ const lobbySchema = new mongoose.Schema({
       default: Date.now,
     },
   }],
+  // Restaurants that everyone swiped right on (for voting)
   consensusRestaurants: [{
-    type: String, // Restaurant IDs that all participants swiped right on
+    type: String, // Restaurant IDs
+  }],
+  // Votes for final restaurant selection
+  votes: [{
+    user_id: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
+    restaurant_id: {
+      type: String,
+      required: true,
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+  }],
+  // Final winning restaurant
+  winningRestaurant: {
+    type: String,
+  },
+  // Restaurants that are tied (for revoting)
+  tiedRestaurants: [{
+    type: String,
   }],
 }, {
   timestamps: true,

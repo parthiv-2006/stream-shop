@@ -12,7 +12,7 @@ export function useAuth() {
     setError(null);
     try {
       const result = await registerWithPassword(username, password, confirmPassword);
-      setUser({ username, id: result.userId });
+      setUser({ username, id: result.userId, userId: result.userId });
       setToken(result.token);
       router.push('/onboarding');
     } catch (err) {
@@ -41,9 +41,9 @@ export function useAuth() {
     setError(null);
     try {
       const result = await loginWithPassword(username, password);
-      setUser({ username, id: result.userId });
+      setUser({ username, id: result.userId, userId: result.userId });
       setToken(result.token);
-      router.push('/lobby/create');
+      router.push('/dashboard');
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {

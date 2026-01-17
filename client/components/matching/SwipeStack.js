@@ -8,35 +8,25 @@ export function SwipeStack({ restaurants, onSwipe, onEmpty }) {
   const [swipedRestaurants, setSwipedRestaurants] = useState(new Set());
 
   useEffect(() => {
-    // Reset when restaurants change
     setCurrentIndex(0);
     setSwipedRestaurants(new Set());
   }, [restaurants]);
 
   const handleSwipe = (restaurantId, direction) => {
-    if (swipedRestaurants.has(restaurantId)) {
-      return; // Already swiped
-    }
+    if (swipedRestaurants.has(restaurantId)) return;
 
     setSwipedRestaurants(prev => new Set([...prev, restaurantId]));
-    
-    // Call the parent's onSwipe handler
     onSwipe(restaurantId, direction);
 
-    // Move to next restaurant
     setTimeout(() => {
       if (currentIndex + 1 >= restaurants.length) {
-        // No more restaurants
-        if (onEmpty) {
-          onEmpty();
-        }
+        if (onEmpty) onEmpty();
       } else {
         setCurrentIndex(prev => prev + 1);
       }
-    }, 300); // Wait for animation
+    }, 300);
   };
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (currentIndex >= restaurants.length) return;
@@ -71,10 +61,11 @@ export function SwipeStack({ restaurants, onSwipe, onEmpty }) {
 
   if (!restaurants || restaurants.length === 0) {
     return (
-      <div className="w-full h-[600px] flex items-center justify-center bg-gray-50 rounded-2xl">
-        <div className="text-center">
-          <p className="text-xl text-gray-600 mb-2">No more restaurants to swipe</p>
-          <p className="text-sm text-gray-500">Waiting for more options...</p>
+      <div className="w-full h-[500px] flex items-center justify-center">
+        <div className="text-center glass-card rounded-3xl p-12">
+          <div className="text-6xl mb-4 animate-float">🍽️</div>
+          <p className="text-xl text-white/70 mb-2">No more restaurants</p>
+          <p className="text-white/40">Waiting for more options...</p>
         </div>
       </div>
     );
@@ -84,7 +75,8 @@ export function SwipeStack({ restaurants, onSwipe, onEmpty }) {
   const remainingCount = restaurants.length - currentIndex;
 
   return (
-    <div className="relative w-full max-w-md mx-auto h-[600px]">
+    <div className="relative w-full max-w-sm mx-auto h-[500px]">
+      {/* Card Stack */}
       {visibleCards.map((restaurant, idx) => (
         <SwipeCard
           key={restaurant.id}
@@ -95,54 +87,50 @@ export function SwipeStack({ restaurants, onSwipe, onEmpty }) {
         />
       ))}
 
-      {/* Progress indicator */}
-      <div className="absolute -bottom-8 left-0 right-0">
-        <div className="flex items-center justify-center gap-2">
-          <div className="flex gap-1">
-            {Array.from({ length: Math.min(remainingCount, 5) }).map((_, i) => (
-              <div
-                key={i}
-                className={`h-2 rounded-full transition-all ${
-                  i === 0 ? 'w-8 bg-blue-600' : 'w-2 bg-gray-300'
-                }`}
-              />
-            ))}
-          </div>
+      {/* Progress Dots */}
+      <div className="absolute -bottom-4 left-0 right-0">
+        <div className="flex items-center justify-center gap-1.5">
+          {Array.from({ length: Math.min(remainingCount, 5) }).map((_, i) => (
+            <div
+              key={i}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                i === 0 
+                  ? 'w-8 bg-gradient-to-r from-[#ff6b35] to-[#f72585]' 
+                  : 'w-2 bg-white/20'
+              }`}
+            />
+          ))}
           {remainingCount > 5 && (
-            <span className="text-sm text-gray-500 ml-2">+{remainingCount - 5} more</span>
+            <span className="text-xs text-white/40 ml-2">+{remainingCount - 5}</span>
           )}
         </div>
       </div>
 
-      {/* Action buttons */}
-      <div className="absolute -bottom-20 left-0 right-0 flex justify-center gap-4">
+      {/* Action Buttons */}
+      <div className="absolute -bottom-24 left-0 right-0 flex justify-center gap-6">
         <button
           onClick={() => {
             const currentRestaurant = restaurants[currentIndex];
-            if (currentRestaurant) {
-              handleSwipe(currentRestaurant.id, 'left');
-            }
+            if (currentRestaurant) handleSwipe(currentRestaurant.id, 'left');
           }}
-          className="w-16 h-16 rounded-full bg-red-500 text-white flex items-center justify-center shadow-lg hover:bg-red-600 transition-colors"
-          aria-label="Swipe left"
+          className="group w-16 h-16 rounded-full bg-white/10 border-2 border-red-500/50 text-red-400 flex items-center justify-center shadow-lg hover:bg-red-500 hover:text-white hover:scale-110 transition-all duration-300"
+          aria-label="Pass"
         >
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
 
         <button
           onClick={() => {
             const currentRestaurant = restaurants[currentIndex];
-            if (currentRestaurant) {
-              handleSwipe(currentRestaurant.id, 'right');
-            }
+            if (currentRestaurant) handleSwipe(currentRestaurant.id, 'right');
           }}
-          className="w-16 h-16 rounded-full bg-green-500 text-white flex items-center justify-center shadow-lg hover:bg-green-600 transition-colors"
-          aria-label="Swipe right"
+          className="group w-16 h-16 rounded-full bg-white/10 border-2 border-green-500/50 text-green-400 flex items-center justify-center shadow-lg hover:bg-green-500 hover:text-white hover:scale-110 transition-all duration-300"
+          aria-label="Like"
         >
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
           </svg>
         </button>
       </div>

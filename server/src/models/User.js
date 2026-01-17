@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// WebAuthn credentials for passkey authentication
 const webauthnCredentialSchema = new mongoose.Schema({
   credentialID: {
     type: Buffer,
@@ -19,6 +20,72 @@ const webauthnCredentialSchema = new mongoose.Schema({
   },
 });
 
+// Visit history with reviews (Post-Meal Feedback)
+const visitSchema = new mongoose.Schema({
+  restaurant_id: {
+    type: String,
+    required: true,
+  },
+  restaurant_name: {
+    type: String,
+    required: true,
+  },
+  restaurant_cuisine: {
+    type: String,
+  },
+  restaurant_image: {
+    type: String,
+  },
+  // Overall rating
+  rating: {
+    type: Number,
+    min: 1,
+    max: 5,
+  },
+  // Detailed review text
+  review: {
+    type: String,
+    maxlength: 1000,
+  },
+  // Specific aspect ratings
+  aspects: {
+    food_quality: { type: Number, min: 1, max: 5 },
+    service: { type: Number, min: 1, max: 5 },
+    ambiance: { type: Number, min: 1, max: 5 },
+    value: { type: Number, min: 1, max: 5 },
+  },
+  // What dishes they tried
+  dishes_tried: [{
+    type: String,
+  }],
+  // Would they go back?
+  would_return: {
+    type: Boolean,
+  },
+  // Tags for quick categorization
+  tags: [{
+    type: String,
+    enum: ['great-for-groups', 'romantic', 'quick-service', 'good-portions', 
+           'instagram-worthy', 'hidden-gem', 'loud', 'quiet', 'kid-friendly',
+           'date-night', 'casual', 'upscale', 'outdoor-seating', 'late-night'],
+  }],
+  // Whether feedback has been completed
+  feedback_completed: {
+    type: Boolean,
+    default: false,
+  },
+  visited_at: {
+    type: Date,
+    default: Date.now,
+  },
+  feedback_at: {
+    type: Date,
+  },
+  lobby_id: {
+    type: String,
+  },
+}, { _id: true });
+
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -28,14 +95,16 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: false, // Optional during user creation, but required for login
-    select: false, // Don't return password by default
+    required: false,
+    select: false,
   },
+  // Passkey authentication
   webauthnCredentials: {
     type: [webauthnCredentialSchema],
     default: [],
   },
   challenge: { type: String, default: null },
+  // User preferences
   preferences: {
     spice_level: {
       type: String,
@@ -67,6 +136,8 @@ const userSchema = new mongoose.Schema({
       default: 'medium',
     },
   },
+  // Visit history with reviews
+  visits: [visitSchema],
 }, {
   timestamps: true,
 });
