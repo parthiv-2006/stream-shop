@@ -20,8 +20,16 @@ export default function LobbyRoomPage() {
     // Wait for auth state to hydrate before checking authentication
     if (hasHydrated && !isAuthenticated) {
       router.push('/');
+      return;
     }
-  }, [isAuthenticated, hasHydrated, router]);
+
+    // Redirect based on lobby status - automatically redirect all members
+    if (lobby?.status === 'matching') {
+      router.push(`/matching/${lobbyId}`);
+    } else if (lobby?.status === 'voting') {
+      router.push(`/voting/${lobbyId}`);
+    }
+  }, [isAuthenticated, hasHydrated, router, lobby?.status, lobbyId]);
 
   const handleStartMatching = async () => {
     try {
