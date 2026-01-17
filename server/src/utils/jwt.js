@@ -4,12 +4,12 @@ const JWT_SECRET = process.env.JWT_SECRET || 'default_secret_change_in_productio
 
 /**
  * Generate JWT token for user
- * @param {Object} payload - Token payload { userId, username, isGuest }
+ * @param {Object} payload - Token payload { userId, username }
  * @returns {string} JWT token
  */
 function generateToken(payload) {
-  // 24 hours for authenticated users, 1 hour for guests
-  const expiresIn = payload.isGuest ? '1h' : '24h';
+  // 24 hours for authenticated users
+  const expiresIn = '24h';
   
   return jwt.sign(payload, JWT_SECRET, { expiresIn });
 }

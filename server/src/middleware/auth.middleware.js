@@ -2,10 +2,9 @@ const { verifyToken } = require('../utils/jwt');
 
 /**
  * Middleware to verify JWT token
- * Supports optional auth (for guest mode)
  * Attaches user to req.user if token is valid
  */
-const authenticate = (required = false) => {
+const authenticate = (required = true) => {
   return async (req, res, next) => {
     try {
       const authHeader = req.headers.authorization;
@@ -30,7 +29,6 @@ const authenticate = (required = false) => {
       req.user = {
         userId: decoded.userId,
         username: decoded.username,
-        isGuest: decoded.isGuest || false,
       };
 
       next();

@@ -10,12 +10,12 @@ const {
 } = require('../controllers/lobby.controller');
 const authenticate = require('../middleware/auth.middleware');
 
-// Lobby endpoints (optional auth for guest support)
-router.post('/create', authenticate(false), createLobby);
-router.post('/join', authenticate(false), joinLobby);
-router.get('/:lobbyId', authenticate(false), getLobby);
-router.post('/:lobbyId/start-matching', authenticate(false), startMatching);
-router.get('/:lobbyId/restaurants', authenticate(false), getRestaurants);
-router.post('/:lobbyId/swipe', authenticate(false), recordSwipe);
+// Lobby endpoints (authentication required)
+router.post('/create', authenticate(true), createLobby);
+router.post('/join', authenticate(true), joinLobby);
+router.get('/:lobbyId', authenticate(true), getLobby);
+router.post('/:lobbyId/start-matching', authenticate(true), startMatching);
+router.get('/:lobbyId/restaurants', authenticate(true), getRestaurants);
+router.post('/:lobbyId/swipe', authenticate(true), recordSwipe);
 
 module.exports = router;

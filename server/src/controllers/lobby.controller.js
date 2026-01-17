@@ -9,15 +9,13 @@ const AppError = require('../utils/errors');
  */
 exports.createLobby = async (req, res, next) => {
   try {
-    let userId = req.user?.userId;
+    const userId = req.user?.userId;
     const { name } = req.body;
 
     if (!userId) {
-      // Create guest user if no userId provided
-      const guestUser = await User.create({
-        username: `guest_${Date.now()}`,
+      return res.status(401).json({
+        error: { message: 'Authentication required' },
       });
-      userId = guestUser._id.toString();
     }
 
     // Find user
@@ -95,16 +93,17 @@ exports.joinLobby = async (req, res, next) => {
       });
     }
 
-    // Handle user (create guest if needed)
-    let user;
-    if (userId) {
-      user = await User.findById(userId);
+    // Find user
+    if (!userId) {
+      return res.status(401).json({
+        error: { message: 'Authentication required' },
+      });
     }
 
+    const user = await User.findById(userId);
     if (!user) {
-      // Create guest user
-      user = await User.create({
-        username: `guest_${Date.now()}`,
+      return res.status(404).json({
+        error: { message: 'User not found' },
       });
     }
 
@@ -416,24 +415,20 @@ exports.recordSwipe = async (req, res, next) => {
       });
     }
 
-    // Check if user is a participant (handle both authenticated and guest users)
-    const isParticipant = userId 
-      ? lobby.participants.some(p => p.user_id.toString() === userId)
-      : false;
-
-    if (!isParticipant && userId) {
-      return res.status(403).json({
-        error: { message: 'You must be a participant to swipe' },
+    // Check if user is authenticated
+    if (!userId) {
+      return res.status(401).json({
+        error: { message: 'Authentication required' },
       });
     }
 
-    // For guest users, we'll allow swiping but track by a temporary ID
-    if (!userId) {
-      // Create a guest user for tracking
-      const guestUser = await User.create({
-        username: `guest_${Date.now()}`,
+    // Check if user is a participant
+    const isParticipant = lobby.participants.some(p => p.user_id.toString() === userId);
+
+    if (!isParticipant) {
+      return res.status(403).json({
+        error: { message: 'You must be a participant to swipe' },
       });
-      userId = guestUser._id.toString();
     }
 
     // Initialize swipes array if it doesn't exist

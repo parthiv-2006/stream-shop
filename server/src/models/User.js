@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: false, // Optional for guest users
+    required: false, // Optional during user creation, but required for login
     select: false, // Don't return password by default
   },
   preferences: {

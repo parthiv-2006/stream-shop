@@ -51,7 +51,6 @@ exports.register = async (req, res, next) => {
     const token = generateToken({
       userId: user._id.toString(),
       username: user.username,
-      isGuest: false,
     });
 
     res.status(201).json({
@@ -98,7 +97,7 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // Check if user has a password (not a guest user)
+    // Check if user has a password
     if (!user.password) {
       return res.status(401).json({
         error: { message: 'Invalid username or password' },
@@ -118,7 +117,6 @@ exports.login = async (req, res, next) => {
     const token = generateToken({
       userId: user._id.toString(),
       username: user.username,
-      isGuest: false,
     });
 
     res.json({

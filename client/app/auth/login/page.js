@@ -1,7 +1,6 @@
 'use client';
 
 import { PasswordForm } from '@/components/auth/PasswordForm';
-import { GuestModeButton } from '@/components/auth/GuestModeButton';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -15,15 +14,6 @@ export default function LoginPage() {
         
         <div className="space-y-4">
           <PasswordForm mode="login" />
-          <div className="relative">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">Or</span>
-            </div>
-          </div>
-          <GuestModeButton />
         </div>
 
         <div className="pt-4 border-t">
