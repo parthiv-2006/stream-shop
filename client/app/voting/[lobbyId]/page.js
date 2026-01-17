@@ -1,9 +1,10 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { lobbyApi } from '@/lib/api/lobby';
+import { userApi } from '@/lib/api/user';
 import toast from 'react-hot-toast';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
@@ -89,7 +90,7 @@ export default function VotingPage() {
     onSuccess: (data) => {
       toast.success(data.message || 'You left the lobby');
       queryClient.invalidateQueries(['lobby', lobbyId]);
-      router.push('/lobby/create');
+      router.push('/dashboard');
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to leave lobby');
@@ -123,12 +124,24 @@ export default function VotingPage() {
     }
   }, [votingData?.userVote]);
 
-  // Redirect to results when completed
+  // Track if visit has been recorded
+  const visitRecordedRef = useRef(false);
+
+  // Record visit when voting is completed
   useEffect(() => {
-    if (votingData?.status === 'completed') {
-      // Stay on this page but show results
+    if (votingData?.status === 'completed' && votingData?.winningRestaurant && !visitRecordedRef.current) {
+      visitRecordedRef.current = true;
+      const winner = votingData.restaurants?.find(r => r.id === votingData.winningRestaurant);
+      if (winner) {
+        userApi.addVisit({
+          restaurant_id: winner.id,
+          restaurant_name: winner.name,
+          restaurant_cuisine: winner.cuisine,
+          lobby_id: lobbyId,
+        }).catch(err => console.error('Failed to record visit:', err));
+      }
     }
-  }, [votingData?.status]);
+  }, [votingData?.status, votingData?.winningRestaurant, votingData?.restaurants, lobbyId]);
 
   const handleVote = async (restaurantId) => {
     setSelectedRestaurant(restaurantId);
@@ -369,7 +382,7 @@ export default function VotingPage() {
               This might happen if no one swiped right on the same restaurants.
             </p>
             <button
-              onClick={() => router.push('/lobby/create')}
+              onClick={() => router.push('/dashboard')}
               className="mt-4 px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
             >
               Back to Home

@@ -29,7 +29,7 @@ export default function LobbyRoomPage() {
     onSuccess: (data) => {
       toast.success(data.message || 'You left the lobby');
       queryClient.invalidateQueries(['lobby', lobbyId]);
-      router.push('/lobby/create');
+      router.push('/dashboard');
     },
     onError: (error) => {
       toast.error(error.message || 'Failed to leave lobby');

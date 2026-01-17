@@ -39,9 +39,9 @@ export default function OnboardingPage() {
         throw new Error(errorData.error?.message || errorData.message || `Failed to save preferences (${response.status})`);
       }
 
-      // Success - redirect to lobby creation
+      // Success - redirect to dashboard
       toast.success('Preferences saved successfully!');
-      router.push('/lobby/create');
+      router.push('/dashboard');
     } catch (error) {
       toast.error(error.message || 'Failed to save preferences. Please try again.');
       throw error; // Re-throw to let PreferenceForm handle it

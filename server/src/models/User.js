@@ -1,5 +1,37 @@
 const mongoose = require('mongoose');
 
+const visitSchema = new mongoose.Schema({
+  restaurant_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Restaurant',
+    required: true,
+  },
+  restaurant_name: {
+    type: String,
+    required: true,
+  },
+  restaurant_cuisine: {
+    type: String,
+  },
+  rating: {
+    type: Number,
+    min: 1,
+    max: 5,
+  },
+  review: {
+    type: String,
+    maxlength: 500,
+  },
+  visited_at: {
+    type: Date,
+    default: Date.now,
+  },
+  lobby_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Lobby',
+  },
+}, { _id: true });
+
 const userSchema = new mongoose.Schema({
   username: {
     type: String,
@@ -9,8 +41,8 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: false, // Optional during user creation, but required for login
-    select: false, // Don't return password by default
+    required: false,
+    select: false,
   },
   preferences: {
     spice_level: {
@@ -43,6 +75,8 @@ const userSchema = new mongoose.Schema({
       default: 'medium',
     },
   },
+  // Visit history with reviews
+  visits: [visitSchema],
 }, {
   timestamps: true,
 });

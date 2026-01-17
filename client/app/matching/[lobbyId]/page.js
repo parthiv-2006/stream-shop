@@ -168,7 +168,7 @@ export default function MatchingPage() {
             </div>
 
             <button
-              onClick={() => router.push('/lobby/create')}
+              onClick={() => router.push('/dashboard')}
               className="px-6 py-3 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 font-semibold transition-colors"
             >
               Back to Home
