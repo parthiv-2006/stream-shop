@@ -85,6 +85,17 @@ export default function DashboardPage() {
     onError: (error) => toast.error(error.message || 'Failed to submit feedback'),
   });
 
+  const didNotAttendMutation = useMutation({
+    mutationFn: (visitId) => userApi.updateAttendanceStatus(visitId, 'did_not_attend'),
+    onSuccess: () => {
+      toast.success('Got it! We\'ve removed this from your pending reviews.');
+      queryClient.invalidateQueries(['profile']);
+      queryClient.invalidateQueries(['pendingFeedback']);
+      setFeedbackVisit(null);
+    },
+    onError: (error) => toast.error(error.message || 'Failed to update status'),
+  });
+
   useEffect(() => {
     if (hasHydrated && !isAuthenticated) router.push('/');
   }, [isAuthenticated, hasHydrated, router]);
@@ -173,7 +184,8 @@ export default function DashboardPage() {
               visit={feedbackVisit}
               onSubmit={(feedback) => feedbackMutation.mutate({ visitId: feedbackVisit.id, feedback })}
               onCancel={() => setFeedbackVisit(null)}
-              isSubmitting={feedbackMutation.isPending}
+              onDidNotAttend={() => didNotAttendMutation.mutate(feedbackVisit.id)}
+              isSubmitting={feedbackMutation.isPending || didNotAttendMutation.isPending}
             />
           </div>
         </div>
@@ -375,8 +387,8 @@ export default function DashboardPage() {
                       key={option.value}
                       onClick={() => setEditedPrefs({ ...editedPrefs, spice_level: option.value })}
                       className={`px-5 py-3 rounded-xl font-medium transition-all ${editedPrefs.spice_level === option.value
-                          ? `bg-gradient-to-r ${option.color} text-white scale-105`
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
+                        ? `bg-gradient-to-r ${option.color} text-white scale-105`
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }`}
                     >
                       {option.icon} {option.label}
@@ -394,8 +406,8 @@ export default function DashboardPage() {
                       key={option.value}
                       onClick={() => setEditedPrefs({ ...editedPrefs, budget: option.value })}
                       className={`px-5 py-3 rounded-xl font-medium transition-all ${editedPrefs.budget === option.value
-                          ? `bg-gradient-to-r ${option.color} text-white scale-105`
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
+                        ? `bg-gradient-to-r ${option.color} text-white scale-105`
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }`}
                     >
                       {option.icon} {option.label}
@@ -416,8 +428,8 @@ export default function DashboardPage() {
                         dietary_preferences: toggleArrayItem(editedPrefs.dietary_preferences || [], option)
                       })}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${(editedPrefs.dietary_preferences || []).includes(option)
-                          ? 'bg-gradient-to-r from-[#4cc9f0] to-[#7209b7] text-white'
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
+                        ? 'bg-gradient-to-r from-[#4cc9f0] to-[#7209b7] text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }`}
                     >
                       {option}
@@ -438,8 +450,8 @@ export default function DashboardPage() {
                         allergies: toggleArrayItem(editedPrefs.allergies || [], option)
                       })}
                       className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${(editedPrefs.allergies || []).includes(option)
-                          ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white'
-                          : 'bg-white/10 text-white/70 hover:bg-white/20'
+                        ? 'bg-gradient-to-r from-red-500 to-pink-600 text-white'
+                        : 'bg-white/10 text-white/70 hover:bg-white/20'
                         }`}
                     >
                       {option}

@@ -65,14 +65,20 @@ const visitSchema = new mongoose.Schema({
   // Tags for quick categorization
   tags: [{
     type: String,
-    enum: ['great-for-groups', 'romantic', 'quick-service', 'good-portions', 
-           'instagram-worthy', 'hidden-gem', 'loud', 'quiet', 'kid-friendly',
-           'date-night', 'casual', 'upscale', 'outdoor-seating', 'late-night'],
+    enum: ['great-for-groups', 'romantic', 'quick-service', 'good-portions',
+      'instagram-worthy', 'hidden-gem', 'loud', 'quiet', 'kid-friendly',
+      'date-night', 'casual', 'upscale', 'outdoor-seating', 'late-night'],
   }],
   // Whether feedback has been completed
   feedback_completed: {
     type: Boolean,
     default: false,
+  },
+  // Attendance status: 'pending', 'confirmed', 'attended', 'did_not_attend'
+  attendance_status: {
+    type: String,
+    enum: ['pending', 'confirmed', 'attended', 'did_not_attend'],
+    default: 'pending',
   },
   visited_at: {
     type: Date,

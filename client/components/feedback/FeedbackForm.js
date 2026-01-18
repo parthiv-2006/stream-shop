@@ -26,7 +26,7 @@ const TAGS = [
 
 function StarRating({ rating, setRating, size = 'lg' }) {
   const sizeClasses = size === 'lg' ? 'text-3xl' : 'text-xl';
-  
+
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((star) => (
@@ -34,9 +34,8 @@ function StarRating({ rating, setRating, size = 'lg' }) {
           key={star}
           type="button"
           onClick={() => setRating(star)}
-          className={`${sizeClasses} transition-transform hover:scale-110 ${
-            star <= rating ? 'text-yellow-400' : 'text-white/20'
-          }`}
+          className={`${sizeClasses} transition-transform hover:scale-110 ${star <= rating ? 'text-yellow-400' : 'text-white/20'
+            }`}
         >
           ★
         </button>
@@ -45,7 +44,7 @@ function StarRating({ rating, setRating, size = 'lg' }) {
   );
 }
 
-export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
+export function FeedbackForm({ visit, onSubmit, onCancel, onDidNotAttend, isSubmitting }) {
   const [step, setStep] = useState(0);
   const [rating, setRating] = useState(0);
   const [aspects, setAspects] = useState({
@@ -67,8 +66,8 @@ export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
   ];
 
   const handleTagToggle = (tag) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
+    setSelectedTags(prev =>
+      prev.includes(tag)
         ? prev.filter(t => t !== tag)
         : [...prev, tag]
     );
@@ -105,8 +104,8 @@ export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
       <div className="p-6 bg-gradient-to-r from-[#ff6b35]/10 to-[#f72585]/10 border-b border-white/10">
         <div className="flex items-center gap-4">
           {visit.restaurant_image ? (
-            <img 
-              src={visit.restaurant_image} 
+            <img
+              src={visit.restaurant_image}
               alt={visit.restaurant_name}
               className="w-16 h-16 rounded-xl object-cover"
             />
@@ -128,11 +127,10 @@ export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
           {steps.map((_, i) => (
             <div
               key={i}
-              className={`flex-1 h-1 rounded-full transition-all ${
-                i <= step 
-                  ? 'bg-gradient-to-r from-[#ff6b35] to-[#f72585]' 
-                  : 'bg-white/10'
-              }`}
+              className={`flex-1 h-1 rounded-full transition-all ${i <= step
+                ? 'bg-gradient-to-r from-[#ff6b35] to-[#f72585]'
+                : 'bg-white/10'
+                }`}
             />
           ))}
         </div>
@@ -168,10 +166,10 @@ export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
                   <span className="text-xl">{icon}</span>
                   <span className="text-white/80">{label}</span>
                 </div>
-                <StarRating 
-                  rating={aspects[key]} 
-                  setRating={(val) => setAspects(prev => ({ ...prev, [key]: val }))} 
-                  size="sm" 
+                <StarRating
+                  rating={aspects[key]}
+                  setRating={(val) => setAspects(prev => ({ ...prev, [key]: val }))}
+                  size="sm"
                 />
               </div>
             ))}
@@ -186,11 +184,10 @@ export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
               <button
                 type="button"
                 onClick={() => setWouldReturn(true)}
-                className={`p-6 rounded-2xl transition-all ${
-                  wouldReturn === true
-                    ? 'bg-gradient-to-br from-green-500 to-emerald-600 scale-[1.02]'
-                    : 'bg-white/10 hover:bg-white/20'
-                }`}
+                className={`p-6 rounded-2xl transition-all ${wouldReturn === true
+                  ? 'bg-gradient-to-br from-green-500 to-emerald-600 scale-[1.02]'
+                  : 'bg-white/10 hover:bg-white/20'
+                  }`}
               >
                 <div className="text-4xl mb-2">👍</div>
                 <div className="font-semibold text-white">Yes!</div>
@@ -199,11 +196,10 @@ export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
               <button
                 type="button"
                 onClick={() => setWouldReturn(false)}
-                className={`p-6 rounded-2xl transition-all ${
-                  wouldReturn === false
-                    ? 'bg-gradient-to-br from-red-500 to-rose-600 scale-[1.02]'
-                    : 'bg-white/10 hover:bg-white/20'
-                }`}
+                className={`p-6 rounded-2xl transition-all ${wouldReturn === false
+                  ? 'bg-gradient-to-br from-red-500 to-rose-600 scale-[1.02]'
+                  : 'bg-white/10 hover:bg-white/20'
+                  }`}
               >
                 <div className="text-4xl mb-2">👎</div>
                 <div className="font-semibold text-white">Nope</div>
@@ -220,11 +216,10 @@ export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
                     key={tag.value}
                     type="button"
                     onClick={() => handleTagToggle(tag.value)}
-                    className={`px-3 py-1.5 rounded-full text-sm transition-all ${
-                      selectedTags.includes(tag.value)
-                        ? 'bg-gradient-to-r from-[#4cc9f0] to-[#7209b7] text-white'
-                        : 'bg-white/10 text-white/60 hover:bg-white/20'
-                    }`}
+                    className={`px-3 py-1.5 rounded-full text-sm transition-all ${selectedTags.includes(tag.value)
+                      ? 'bg-gradient-to-r from-[#4cc9f0] to-[#7209b7] text-white'
+                      : 'bg-white/10 text-white/60 hover:bg-white/20'
+                      }`}
                   >
                     {tag.icon} {tag.label}
                   </button>
@@ -284,16 +279,15 @@ export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
             Later
           </button>
         )}
-        
+
         <button
           type="button"
           onClick={isLastStep ? handleSubmit : () => setStep(prev => prev + 1)}
           disabled={!canProceed() || isSubmitting}
-          className={`flex-1 py-3 px-6 rounded-xl font-bold transition-all disabled:opacity-50 ${
-            isLastStep
-              ? 'bg-gradient-to-r from-[#4cc9f0] to-[#7209b7] text-white'
-              : 'bg-gradient-to-r from-[#ff6b35] to-[#f72585] text-white'
-          }`}
+          className={`flex-1 py-3 px-6 rounded-xl font-bold transition-all disabled:opacity-50 ${isLastStep
+            ? 'bg-gradient-to-r from-[#4cc9f0] to-[#7209b7] text-white'
+            : 'bg-gradient-to-r from-[#ff6b35] to-[#f72585] text-white'
+            }`}
         >
           {isSubmitting ? (
             <span className="flex items-center justify-center gap-2">
@@ -307,6 +301,19 @@ export function FeedbackForm({ visit, onSubmit, onCancel, isSubmitting }) {
           )}
         </button>
       </div>
+
+      {/* Did Not Attend option - only shown on first step */}
+      {step === 0 && onDidNotAttend && (
+        <div className="px-6 pb-6 pt-0">
+          <button
+            type="button"
+            onClick={onDidNotAttend}
+            className="w-full py-2.5 px-4 rounded-xl text-white/40 font-medium hover:text-white/60 hover:bg-white/5 transition-all text-sm border border-transparent hover:border-white/10"
+          >
+            🚫 I didn't go to this restaurant
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,14 +1,15 @@
 const express = require('express');
 const router = express.Router();
-const { 
-  getProfile, 
-  savePreferences, 
-  addVisit, 
-  updateVisit, 
+const {
+  getProfile,
+  savePreferences,
+  addVisit,
+  updateVisit,
   getVisits,
   getVisit,
   submitFeedback,
   getPendingFeedback,
+  updateAttendanceStatus,
 } = require('../controllers/user.controller');
 const authenticate = require('../middleware/auth.middleware');
 
@@ -25,5 +26,7 @@ router.get('/visits/:visitId', authenticate(true), getVisit);
 router.post('/visits', authenticate(true), addVisit);
 router.put('/visits/:visitId', authenticate(true), updateVisit);
 router.post('/visits/:visitId/feedback', authenticate(true), submitFeedback);
+router.post('/visits/:visitId/attendance', authenticate(true), updateAttendanceStatus);
 
 module.exports = router;
+

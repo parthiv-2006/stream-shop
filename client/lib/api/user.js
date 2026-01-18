@@ -11,7 +11,7 @@ export const userApi = {
   }),
 
   // Get visit history
-  getVisits: (page = 1, limit = 10, pendingOnly = false) => 
+  getVisits: (page = 1, limit = 10, pendingOnly = false) =>
     apiRequest(`/user/visits?page=${page}&limit=${limit}${pendingOnly ? '&pending_only=true' : ''}`),
 
   // Get a single visit
@@ -36,5 +36,11 @@ export const userApi = {
   submitFeedback: (visitId, feedback) => apiRequest(`/user/visits/${visitId}/feedback`, {
     method: 'POST',
     body: JSON.stringify(feedback),
+  }),
+
+  // Update attendance status (confirmed, attended, did_not_attend)
+  updateAttendanceStatus: (visitId, status) => apiRequest(`/user/visits/${visitId}/attendance`, {
+    method: 'POST',
+    body: JSON.stringify({ status }),
   }),
 };

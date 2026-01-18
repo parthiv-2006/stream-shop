@@ -104,6 +104,18 @@ export default function VotingPage() {
     onError: (error) => toast.error(error.message || 'Failed to start revote'),
   });
 
+  const [currentVisitId, setCurrentVisitId] = useState(null);
+  const [attendanceConfirmed, setAttendanceConfirmed] = useState(false);
+
+  const confirmAttendanceMutation = useMutation({
+    mutationFn: async (visitId) => userApi.updateAttendanceStatus(visitId, 'confirmed'),
+    onSuccess: () => {
+      toast.success("Great! We'll remind you to leave a review after your visit.", { icon: '🎉', duration: 4000 });
+      setAttendanceConfirmed(true);
+    },
+    onError: (error) => toast.error(error.message || 'Failed to confirm attendance'),
+  });
+
   useEffect(() => {
     if (hasHydrated && !isAuthenticated) router.push('/');
   }, [isAuthenticated, hasHydrated, router]);
@@ -134,6 +146,10 @@ export default function VotingPage() {
           restaurant_cuisine: winner.cuisine,
           restaurant_image: winner.image || winner.imageUrl,
           lobby_id: lobbyId,
+        }).then(response => {
+          if (response?.visit?.id) {
+            setCurrentVisitId(response.visit.id);
+          }
         }).catch(err => console.error('Failed to record visit:', err));
       }
     }
@@ -285,6 +301,21 @@ export default function VotingPage() {
 
             {/* Actions */}
             <div className="space-y-3">
+              {/* Confirm Attendance Button - Shows for everyone */}
+              {currentVisitId && !attendanceConfirmed && (
+                <button
+                  onClick={() => confirmAttendanceMutation.mutate(currentVisitId)}
+                  disabled={confirmAttendanceMutation.isPending}
+                  className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-[#ffd60a] to-[#ff6b35] text-black font-bold text-lg hover:opacity-90 disabled:opacity-50 transition-all shadow-lg"
+                >
+                  {confirmAttendanceMutation.isPending ? 'Confirming...' : "🍽️ We're Going Here!"}
+                </button>
+              )}
+              {attendanceConfirmed && (
+                <div className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/50 text-center">
+                  <span className="text-green-400 font-bold text-lg">✓ See you there! Enjoy your meal!</span>
+                </div>
+              )}
               {isHost && (
                 <button
                   onClick={() => resetMutation.mutate()}

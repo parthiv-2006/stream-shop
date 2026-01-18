@@ -15,7 +15,7 @@ exports.getProfile = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         error: { message: 'User not found' },
@@ -56,6 +56,7 @@ function formatVisit(v) {
     would_return: v.would_return,
     tags: v.tags || [],
     feedback_completed: v.feedback_completed || false,
+    attendance_status: v.attendance_status || 'pending',
     visited_at: v.visited_at,
     feedback_at: v.feedback_at,
     lobby_id: v.lobby_id,
@@ -80,7 +81,7 @@ function updateCuisineAndTagStats(user, visit) {
   const cuisine = visit.restaurant_cuisine;
   const rating = visit.rating;
   const visitDate = visit.visited_at || visit.feedback_at || new Date();
-  
+
   let cuisineDataChanged = false;
   let tagDataChanged = false;
 
@@ -129,8 +130,8 @@ function updateCuisineAndTagStats(user, visit) {
     // Update visit count and rating statistics
     cuisineStat.visit_count = (cuisineStat.visit_count || 0) + 1;
     cuisineStat.total_rating_sum = (cuisineStat.total_rating_sum || 0) + Number(rating);
-    cuisineStat.average_rating = cuisineStat.visit_count > 0 
-      ? cuisineStat.total_rating_sum / cuisineStat.visit_count 
+    cuisineStat.average_rating = cuisineStat.visit_count > 0
+      ? cuisineStat.total_rating_sum / cuisineStat.visit_count
       : 0;
 
     // Update aspect averages if provided
@@ -203,8 +204,8 @@ function updateCuisineAndTagStats(user, visit) {
       // Update visit count and rating statistics
       tagStat.visit_count = (tagStat.visit_count || 0) + 1;
       tagStat.total_rating_sum = (tagStat.total_rating_sum || 0) + Number(rating);
-      tagStat.average_rating = tagStat.visit_count > 0 
-        ? tagStat.total_rating_sum / tagStat.visit_count 
+      tagStat.average_rating = tagStat.visit_count > 0
+        ? tagStat.total_rating_sum / tagStat.visit_count
         : 0;
 
       // Update last visited date
@@ -226,7 +227,7 @@ function updateCuisineAndTagStats(user, visit) {
   if (tagDataChanged) {
     user.markModified('preferences.tag_data');
   }
-  
+
   // Mark preferences as modified if any nested changes were made
   if (cuisineDataChanged || tagDataChanged) {
     user.markModified('preferences');
@@ -255,7 +256,7 @@ exports.savePreferences = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         error: { message: 'User not found' },
@@ -270,7 +271,7 @@ exports.savePreferences = async (req, res, next) => {
       dietary_preferences,
       disliked_cuisines,
     };
-    
+
     await user.save();
 
     res.json({
@@ -292,12 +293,12 @@ exports.savePreferences = async (req, res, next) => {
 exports.addVisit = async (req, res, next) => {
   try {
     const userId = req.user?.userId;
-    const { 
-      restaurant_id, 
-      restaurant_name, 
-      restaurant_cuisine, 
+    const {
+      restaurant_id,
+      restaurant_name,
+      restaurant_cuisine,
       restaurant_image,
-      lobby_id 
+      lobby_id
     } = req.body;
 
     if (!userId) {
@@ -313,7 +314,7 @@ exports.addVisit = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         error: { message: 'User not found' },
@@ -368,9 +369,9 @@ exports.submitFeedback = async (req, res, next) => {
   try {
     const userId = req.user?.userId;
     const { visitId } = req.params;
-    const { 
-      rating, 
-      review, 
+    const {
+      rating,
+      review,
       aspects,
       dishes_tried,
       would_return,
@@ -390,7 +391,7 @@ exports.submitFeedback = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         error: { message: 'User not found' },
@@ -398,7 +399,7 @@ exports.submitFeedback = async (req, res, next) => {
     }
 
     const visit = user.visits?.id(visitId);
-    
+
     if (!visit) {
       return res.status(404).json({
         error: { message: 'Visit not found' },
@@ -469,7 +470,7 @@ exports.updateVisit = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         error: { message: 'User not found' },
@@ -477,7 +478,7 @@ exports.updateVisit = async (req, res, next) => {
     }
 
     const visit = user.visits?.id(visitId);
-    
+
     if (!visit) {
       return res.status(404).json({
         error: { message: 'Visit not found' },
@@ -514,7 +515,7 @@ exports.getVisits = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         error: { message: 'User not found' },
@@ -522,7 +523,7 @@ exports.getVisits = async (req, res, next) => {
     }
 
     let visits = user.visits || [];
-    
+
     // Filter to only pending feedback if requested
     if (pending_only === 'true') {
       visits = visits.filter(v => !v.feedback_completed);
@@ -558,7 +559,7 @@ exports.getVisit = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         error: { message: 'User not found' },
@@ -566,7 +567,7 @@ exports.getVisit = async (req, res, next) => {
     }
 
     const visit = user.visits?.id(visitId);
-    
+
     if (!visit) {
       return res.status(404).json({
         error: { message: 'Visit not found' },
@@ -595,18 +596,80 @@ exports.getPendingFeedback = async (req, res, next) => {
     }
 
     const user = await User.findById(userId);
-    
+
     if (!user) {
       return res.status(404).json({
         error: { message: 'User not found' },
       });
     }
 
-    const pendingVisits = (user.visits || []).filter(v => !v.feedback_completed);
+    // Filter to confirmed visits that haven't been reviewed yet
+    const pendingVisits = (user.visits || []).filter(v =>
+      !v.feedback_completed && v.attendance_status !== 'did_not_attend'
+    );
 
     res.json({
       visits: pendingVisits.map(v => formatVisit(v)),
       count: pendingVisits.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Update attendance status for a visit
+ */
+exports.updateAttendanceStatus = async (req, res, next) => {
+  try {
+    const userId = req.user?.userId;
+    const { visitId } = req.params;
+    const { status } = req.body;
+
+    const validStatuses = ['pending', 'confirmed', 'attended', 'did_not_attend'];
+
+    if (!userId) {
+      return res.status(401).json({
+        error: { message: 'Authentication required' },
+      });
+    }
+
+    if (!status || !validStatuses.includes(status)) {
+      return res.status(400).json({
+        error: { message: `Status must be one of: ${validStatuses.join(', ')}` },
+      });
+    }
+
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        error: { message: 'User not found' },
+      });
+    }
+
+    const visit = user.visits?.id(visitId);
+
+    if (!visit) {
+      return res.status(404).json({
+        error: { message: 'Visit not found' },
+      });
+    }
+
+    visit.attendance_status = status;
+
+    // If marked as did_not_attend, also mark feedback as complete to remove from pending
+    if (status === 'did_not_attend') {
+      visit.feedback_completed = true;
+      visit.feedback_at = new Date();
+    }
+
+    await user.save();
+
+    res.json({
+      success: true,
+      message: `Attendance status updated to: ${status}`,
+      visit: formatVisit(visit),
     });
   } catch (error) {
     next(error);
