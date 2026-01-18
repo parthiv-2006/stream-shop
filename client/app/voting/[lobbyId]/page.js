@@ -206,7 +206,7 @@ export default function VotingPage() {
   // Winner Screen
   if (votingData?.status === 'completed') {
     const winner = votingData.restaurants?.find(r => r.id === votingData.winningRestaurant);
-    
+
     return (
       <div className="min-h-screen bg-animated-gradient text-white relative overflow-hidden p-4">
         <Confetti trigger={showConfetti} type="celebration" />
@@ -214,7 +214,7 @@ export default function VotingPage() {
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="w-[500px] h-[500px] bg-gradient-to-br from-[#ffd60a]/20 to-transparent rounded-full blur-3xl animate-pulse"></div>
         </div>
-        
+
         <div className="relative z-10 max-w-2xl mx-auto py-12">
           <div className="glass-card rounded-3xl p-8 text-center overflow-hidden">
             {/* Celebration Header */}
@@ -225,12 +225,27 @@ export default function VotingPage() {
               </h1>
               <p className="text-white/60">The group has spoken</p>
             </div>
-            
+
             {winner && (
               <div className="relative rounded-2xl p-6 mb-8 bg-gradient-to-r from-[#ff6b35]/20 to-[#f72585]/20 border border-[#ff6b35]/30 overflow-hidden">
                 <div className="absolute inset-0 shimmer"></div>
                 <div className="relative z-10">
-                  <div className="text-4xl mb-4">🍽️</div>
+                  {/* Winner Image */}
+                  {winner.image ? (
+                    <div className="w-full h-48 rounded-xl overflow-hidden mb-4">
+                      <img
+                        src={winner.image}
+                        alt={winner.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.parentElement.innerHTML = '<div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#ff6b35]/30 to-[#f72585]/30"><span class="text-6xl">🍽️</span></div>';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="text-4xl mb-4">🍽️</div>
+                  )}
                   <h2 className="text-3xl font-bold text-white mb-2">{winner.name}</h2>
                   <p className="text-lg font-medium bg-gradient-to-r from-[#ff6b35] to-[#f72585] bg-clip-text text-transparent mb-4">
                     {winner.cuisine}
@@ -303,7 +318,7 @@ export default function VotingPage() {
   return (
     <div className="min-h-screen bg-animated-gradient text-white relative overflow-hidden">
       <Particles />
-      
+
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#ffd60a]/10 to-transparent rounded-full blur-3xl"></div>
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-[#ff6b35]/10 to-transparent rounded-full blur-3xl"></div>
 
@@ -314,7 +329,7 @@ export default function VotingPage() {
             <span className="gradient-text">Cast Your Vote!</span>
           </h1>
           <p className="text-white/50 mb-6">Pick your top choice from the group favorites</p>
-          
+
           {/* Progress */}
           <div className="max-w-sm mx-auto">
             <div className="flex items-center justify-between text-sm mb-2">
@@ -322,7 +337,7 @@ export default function VotingPage() {
               <span className="text-[#ffd60a] font-bold">{progress}%</span>
             </div>
             <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-              <div 
+              <div
                 className="h-full bg-gradient-to-r from-[#ffd60a] to-[#ff6b35] rounded-full transition-all duration-500"
                 style={{ width: `${progress}%` }}
               ></div>
@@ -335,7 +350,7 @@ export default function VotingPage() {
           {restaurants.map((restaurant, idx) => {
             const isSelected = selectedRestaurant === restaurant.id;
             const isUserVote = votingData?.userVote === restaurant.id;
-            
+
             return (
               <button
                 key={restaurant.id}
@@ -343,8 +358,8 @@ export default function VotingPage() {
                 disabled={voteMutation.isPending}
                 className={`
                   relative text-left p-5 rounded-2xl transition-all duration-300 border
-                  ${isSelected || isUserVote 
-                    ? 'bg-gradient-to-br from-[#ff6b35]/20 to-[#f72585]/20 border-[#ff6b35]/50 scale-[1.02]' 
+                  ${isSelected || isUserVote
+                    ? 'bg-gradient-to-br from-[#ff6b35]/20 to-[#f72585]/20 border-[#ff6b35]/50 scale-[1.02]'
                     : 'glass-card border-white/10 hover:border-white/30 hover:scale-[1.01]'}
                   disabled:opacity-50
                 `}
@@ -355,19 +370,33 @@ export default function VotingPage() {
                     Your Vote ✓
                   </div>
                 )}
-                
+
                 <div className="flex gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#ff6b35]/30 to-[#f72585]/30 flex items-center justify-center text-2xl flex-shrink-0">
-                    🍽️
-                  </div>
+                  {/* Restaurant Image */}
+                  {restaurant.image ? (
+                    <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0">
+                      <img
+                        src={restaurant.image}
+                        alt={restaurant.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.target.parentElement.innerHTML = '<div class="w-full h-full bg-gradient-to-br from-[#ff6b35]/30 to-[#f72585]/30 flex items-center justify-center text-2xl">🍽️</div>';
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#ff6b35]/30 to-[#f72585]/30 flex items-center justify-center text-2xl flex-shrink-0">
+                      🍽️
+                    </div>
+                  )}
                   <div className="flex-1 min-w-0">
                     <h3 className="text-lg font-bold text-white mb-1 truncate">{restaurant.name}</h3>
                     <p className="text-[#ff6b35] font-medium text-sm mb-2">{restaurant.cuisine}</p>
-                    
+
                     {restaurant.description && (
                       <p className="text-white/40 text-sm line-clamp-1 mb-3">{restaurant.description}</p>
                     )}
-                    
+
                     <div className="flex items-center gap-3 text-sm">
                       {restaurant.rating && (
                         <div className="flex items-center gap-1 text-[#ffd60a]">
@@ -423,7 +452,7 @@ export default function VotingPage() {
               <p className="text-white/60 mb-6">
                 {votingData.tiedRestaurants?.length || 0} restaurants got equal votes
               </p>
-              
+
               {isHost ? (
                 <div className="space-y-3">
                   <p className="text-white/40 text-sm mb-4">As host, choose how to proceed:</p>
