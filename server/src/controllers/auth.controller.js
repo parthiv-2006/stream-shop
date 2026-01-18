@@ -207,7 +207,12 @@ exports.registerPasskeyVerify = async (req, res) => {
     // Optional: issue JWT after successful registration
     const token = generateToken({ userId: user._id.toString(), username: user.username });
 
-    res.json({ success: true, token });
+    res.json({
+      success: true,
+      token,
+      userId: user._id.toString(),
+      username: user.username
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

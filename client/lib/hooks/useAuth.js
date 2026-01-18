@@ -6,7 +6,7 @@ export function useAuth() {
   const { user, token, isLoading, error, _hasHydrated, setUser, setToken, setLoading, setError, logout } = useAuthStore();
   const router = useRouter();
 
-  
+
   const register1 = async (username, password, confirmPassword) => {
     setLoading(true);
     setError(null);
@@ -22,11 +22,11 @@ export function useAuth() {
     }
   };
 
-  const register2 = async (username, tokenFromServer) => {
+  const register2 = async (username, tokenFromServer, userId) => {
     setLoading(true);
     setError(null);
     try {
-      setUser({ username, id: username }); // hackathon scuffed, you can get id from server later
+      setUser({ username, id: userId, userId: userId });
       setToken(tokenFromServer);
       router.push('/onboarding');
     } catch (err) {
@@ -51,8 +51,8 @@ export function useAuth() {
     }
   };
 
-  const loginWithToken = (username, tokenFromServer) => {
-    setUser({ username, id: username });
+  const loginWithToken = (username, tokenFromServer, userId) => {
+    setUser({ username, id: userId, userId: userId });
     setToken(tokenFromServer);
     router.push('/lobby/create');
   };

@@ -213,7 +213,7 @@ function AuthForm({ mode = 'login' }) {
       if (!result.success) throw new Error(result.error || 'Registration failed');
 
       if (result.token) {
-        await register2(username, result.token);
+        await register2(username, result.token, result.userId);
       }
     } catch (err) {
       console.error(err);
@@ -243,7 +243,7 @@ function AuthForm({ mode = 'login' }) {
 
       if (!result.success) throw new Error(result.error || 'Login failed');
 
-      loginWithToken(username, result.token);
+      loginWithToken(username, result.token, result.userId);
     } catch (err) {
       console.error(err);
       setValidationError(err.message || 'Login failed');
@@ -290,7 +290,7 @@ function AuthForm({ mode = 'login' }) {
 
       {/* Info text */}
       <p className="text-white/40 text-xs text-center">
-        {mode === 'register' 
+        {mode === 'register'
           ? 'Use your device biometrics or security key to create an account'
           : 'Use your saved passkey to sign in securely'
         }
@@ -339,22 +339,20 @@ export function LoginRegisterTabs({ mode = 'login' }) {
       <div className="flex mb-6 p-1 bg-white/5 rounded-xl">
         <button
           type="button"
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-            method === 'password'
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${method === 'password'
               ? 'bg-gradient-to-r from-[#ff6b35] to-[#f72585] text-white shadow-lg'
               : 'text-white/50 hover:text-white'
-          }`}
+            }`}
           onClick={() => setMethod('password')}
         >
           Password
         </button>
         <button
           type="button"
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-            method === 'passkey'
+          className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${method === 'passkey'
               ? 'bg-gradient-to-r from-[#4cc9f0] to-[#7209b7] text-white shadow-lg'
               : 'text-white/50 hover:text-white'
-          }`}
+            }`}
           onClick={() => setMethod('passkey')}
         >
           Passkey
