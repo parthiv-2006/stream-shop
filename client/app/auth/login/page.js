@@ -52,7 +52,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-center text-white/50 text-sm">
-            New to TasteSync?{' '}
+            New to Palate?{' '}
             <Link href="/" className="text-[#ff6b35] hover:text-[#f72585] font-semibold transition-colors">
               Create account
             </Link>

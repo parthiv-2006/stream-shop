@@ -1,8 +1,8 @@
-# TasteSync Project Status Document
+# Palate Project Status Document
 
 ## Overview
 
-This document provides a comprehensive overview of what has been built and what remains to be built for the TasteSync application. The project is organized into **Frontend** and **Backend** sections for clarity.
+This document provides a comprehensive overview of what has been built and what remains to be built for the Palate application. The project is organized into **Frontend** and **Backend** sections for clarity.
 
 ---
 

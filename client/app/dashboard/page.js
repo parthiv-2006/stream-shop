@@ -147,7 +147,7 @@ export default function DashboardPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `tastesync-analytics-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = `palate-analytics-${new Date().toISOString().split('T')[0]}.json`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -200,7 +200,7 @@ export default function DashboardPage() {
                 🍜
               </div>
               <h1 className="text-2xl font-bold">
-                <span className="gradient-text">TasteSync</span>
+                <span className="gradient-text">Palate</span>
               </h1>
             </div>
             <div className="flex items-center gap-4">

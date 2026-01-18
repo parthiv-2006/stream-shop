@@ -19,7 +19,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', message: 'TasteSync API Server is running' });
+  res.json({ status: 'ok', message: 'Palate API Server is running' });
 });
 
 // API Routes

@@ -1,9 +1,9 @@
-Product Requirements Document (PRD): TasteSync
+Product Requirements Document (PRD): Palate
 Version: 7.0 (Hackathon MVP - Optimized)
 Platform: Web Application (Desktop-First, Responsive)
 Date: January 17, 2026
 1. Product Vision
-To eliminate the "social friction" of group dining decisions. TasteSync uses AI to act as an impartial mediator, analyzing individual taste profiles, budgets, and cravings to mathematically determine the optimal restaurant for the group.
+To eliminate the "social friction" of group dining decisions. Palate uses AI to act as an impartial mediator, analyzing individual taste profiles, budgets, and cravings to mathematically determine the optimal restaurant for the group.
 2. The Core Loop (Amplitude Challenge)
 Data: Users swipe on cuisines/dishes; the app tracks preferences (Spicy vs. Mild, Budget Tier).
 Insight: Amplitude analyzes behavioral patterns (e.g., "User A says they like Italian, but rage-clicks 'Next' on 80% of pasta dishes").

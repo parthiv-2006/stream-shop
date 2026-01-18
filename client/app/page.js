@@ -45,7 +45,7 @@ export default function LandingPage() {
             <span className="text-4xl">🍽️</span>
           </div>
           <h1 className="text-5xl font-bold mb-3">
-            <span className="gradient-text">TasteSync</span>
+            <span className="gradient-text">Palate</span>
           </h1>
           <p className="text-white/60 text-lg">
             Find your group's perfect dining match

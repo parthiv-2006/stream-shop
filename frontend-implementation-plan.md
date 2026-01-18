@@ -1,4 +1,4 @@
-# Frontend Implementation Plan: TasteSync
+# Frontend Implementation Plan: Palate
 **Developer:** Parthiv (Frontend Lead & Auth)  
 **Tech Stack:** Next.js 14+ (App Router), React, Tailwind CSS, JavaScript  
 **Deployment:** Vercel  
@@ -429,7 +429,7 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-50 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 space-y-6">
-        <h1 className="text-4xl font-bold text-center text-gray-900">TasteSync</h1>
+        <h1 className="text-4xl font-bold text-center text-gray-900">Palate</h1>
         <p className="text-center text-gray-600">Find your group's perfect dining match</p>
         
         <div className="space-y-4">

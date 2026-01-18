@@ -1,6 +1,6 @@
-# TasteSync Backend API Server
+# Palate Backend API Server
 
-Backend API server for TasteSync supporting Passkey authentication, user preferences, and lobby management.
+Backend API server for Palate supporting Passkey authentication, user preferences, and lobby management.
 
 ## Setup
 
@@ -16,7 +16,7 @@ NODE_ENV=development
 MONGODB_URI=your_mongodb_connection_string
 JWT_SECRET=your_secret_key_here
 RP_ID=localhost
-RP_NAME=TasteSync
+RP_NAME=Palate
 RP_ORIGIN=http://localhost:3000
 ```
 
