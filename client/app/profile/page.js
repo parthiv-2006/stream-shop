@@ -44,6 +44,47 @@ export default function ProfilePage() {
     enabled: hasHydrated && isAuthenticated,
   });
 
+  // Export analytics data as JSON
+  const exportAnalytics = () => {
+    const cuisineData = profile?.preferences?.cuisine_data || [];
+    const tagData = profile?.preferences?.tag_data || [];
+
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      username: profile?.username || user?.username,
+      summary: {
+        cuisinesTried: cuisineData.length,
+        totalCuisineVisits: cuisineData.reduce((sum, c) => sum + (c.visit_count || 0), 0),
+        tagsTracked: tagData.length,
+        totalTagVisits: tagData.reduce((sum, t) => sum + (t.visit_count || 0), 0),
+      },
+      cuisinePreferences: cuisineData.map(c => ({
+        cuisine: c.cuisine,
+        visitCount: c.visit_count,
+        averageRating: Number((c.average_rating || 0).toFixed(2)),
+        wouldReturnCount: c.would_return_count || 0,
+        lastVisited: c.last_visited,
+        aspects: c.average_aspects,
+      })),
+      tagPreferences: tagData.map(t => ({
+        tag: t.tag,
+        visitCount: t.visit_count,
+        averageRating: Number((t.average_rating || 0).toFixed(2)),
+        lastVisited: t.last_visited,
+      })),
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tastesync-analytics-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   useEffect(() => {
     if (hasHydrated && !isAuthenticated) router.push('/');
   }, [isAuthenticated, hasHydrated, router]);
@@ -69,14 +110,14 @@ export default function ProfilePage() {
 
   // Sort cuisines by visit count (most visited first)
   const sortedCuisines = [...cuisineData].sort((a, b) => (b.visit_count || 0) - (a.visit_count || 0));
-  
+
   // Sort tags by visit count (most visited first)
   const sortedTags = [...tagData].sort((a, b) => (b.visit_count || 0) - (a.visit_count || 0));
 
   return (
     <div className="min-h-screen bg-animated-gradient text-white relative overflow-hidden">
       <Particles />
-      
+
       {/* Header */}
       <header className="relative z-10 border-b border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-4">
@@ -95,11 +136,20 @@ export default function ProfilePage() {
                 <span className="gradient-text">Your Profile</span>
               </h1>
             </div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7209b7] to-[#f72585] flex items-center justify-center text-sm font-bold">
-                {(profile?.username || user?.username || 'U').charAt(0).toUpperCase()}
+            <div className="flex items-center gap-4">
+              <button
+                onClick={exportAnalytics}
+                className="group flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#4cc9f0] to-[#7209b7] hover:opacity-90 transition-all font-medium text-sm shadow-lg hover:shadow-[#4cc9f0]/25"
+              >
+                <span className="group-hover:scale-110 transition-transform">📥</span>
+                <span className="hidden sm:inline">Export Analytics</span>
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#7209b7] to-[#f72585] flex items-center justify-center text-sm font-bold">
+                  {(profile?.username || user?.username || 'U').charAt(0).toUpperCase()}
+                </div>
+                <span className="text-white/80 font-medium hidden sm:block">{profile?.username || user?.username}</span>
               </div>
-              <span className="text-white/80 font-medium hidden sm:block">{profile?.username || user?.username}</span>
             </div>
           </div>
         </div>
@@ -109,29 +159,29 @@ export default function ProfilePage() {
         {/* Summary Stats */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { 
-              value: cuisineData.length, 
-              label: 'Cuisines Tried', 
-              icon: '🌍', 
-              gradient: 'from-[#7209b7] to-[#f72585]' 
+            {
+              value: cuisineData.length,
+              label: 'Cuisines Tried',
+              icon: '🌍',
+              gradient: 'from-[#7209b7] to-[#f72585]'
             },
-            { 
-              value: cuisineData.reduce((sum, c) => sum + (c.visit_count || 0), 0), 
-              label: 'Total Cuisine Visits', 
-              icon: '🍽️', 
-              gradient: 'from-[#ff6b35] to-[#f72585]' 
+            {
+              value: cuisineData.reduce((sum, c) => sum + (c.visit_count || 0), 0),
+              label: 'Total Cuisine Visits',
+              icon: '🍽️',
+              gradient: 'from-[#ff6b35] to-[#f72585]'
             },
-            { 
-              value: tagData.length, 
-              label: 'Tags Tracked', 
-              icon: '🏷️', 
-              gradient: 'from-[#4cc9f0] to-[#7209b7]' 
+            {
+              value: tagData.length,
+              label: 'Tags Tracked',
+              icon: '🏷️',
+              gradient: 'from-[#4cc9f0] to-[#7209b7]'
             },
-            { 
-              value: tagData.reduce((sum, t) => sum + (t.visit_count || 0), 0), 
-              label: 'Total Tag Visits', 
-              icon: '⭐', 
-              gradient: 'from-[#ffd60a] to-[#ff6b35]' 
+            {
+              value: tagData.reduce((sum, t) => sum + (t.visit_count || 0), 0),
+              label: 'Total Tag Visits',
+              icon: '⭐',
+              gradient: 'from-[#ffd60a] to-[#ff6b35]'
             },
           ].map((stat, i) => (
             <div key={i} className="glass-card rounded-2xl p-5 hover:scale-[1.02] transition-all duration-300 group">
@@ -167,17 +217,17 @@ export default function ProfilePage() {
                     visits: c.visit_count || 0
                   }))} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis 
-                      dataKey="cuisine" 
+                    <XAxis
+                      dataKey="cuisine"
                       angle={-45}
                       textAnchor="end"
                       height={80}
                       tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
                     />
                     <YAxis tick={{ fill: 'rgba(255,255,255,0.7)' }} />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(0,0,0,0.8)', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(0,0,0,0.8)',
                         border: '1px solid rgba(255,255,255,0.2)',
                         borderRadius: '8px',
                         color: 'white'
@@ -201,20 +251,20 @@ export default function ProfilePage() {
                     rating: Number((c.average_rating || 0).toFixed(1))
                   }))} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis 
-                      dataKey="cuisine" 
+                    <XAxis
+                      dataKey="cuisine"
                       angle={-45}
                       textAnchor="end"
                       height={80}
                       tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
                     />
-                    <YAxis 
+                    <YAxis
                       domain={[0, 5]}
                       tick={{ fill: 'rgba(255,255,255,0.7)' }}
                     />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(0,0,0,0.8)', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(0,0,0,0.8)',
                         border: '1px solid rgba(255,255,255,0.2)',
                         borderRadius: '8px',
                         color: 'white'
@@ -248,20 +298,20 @@ export default function ProfilePage() {
                           <ResponsiveContainer width="100%" height={250}>
                             <RadarChart data={aspects}>
                               <PolarGrid stroke="rgba(255,255,255,0.2)" />
-                              <PolarAngleAxis 
-                                dataKey="aspect" 
+                              <PolarAngleAxis
+                                dataKey="aspect"
                                 tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 12 }}
                               />
-                              <PolarRadiusAxis 
-                                angle={90} 
-                                domain={[0, 5]} 
+                              <PolarRadiusAxis
+                                angle={90}
+                                domain={[0, 5]}
                                 tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
                               />
-                              <Radar 
-                                name={cuisine.cuisine} 
-                                dataKey="value" 
-                                stroke={CHART_COLORS.primary} 
-                                fill={CHART_COLORS.primary} 
+                              <Radar
+                                name={cuisine.cuisine}
+                                dataKey="value"
+                                stroke={CHART_COLORS.primary}
+                                fill={CHART_COLORS.primary}
                                 fillOpacity={0.6}
                               />
                             </RadarChart>
@@ -300,28 +350,28 @@ export default function ProfilePage() {
               <div>
                 <h3 className="text-lg font-semibold text-white mb-4">Visits by Tag</h3>
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart 
+                  <BarChart
                     data={sortedTags.slice(0, 15).map(t => ({
                       tag: t.tag.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                       visits: t.visit_count || 0
-                    }))} 
+                    }))}
                     layout="vertical"
                     margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis 
+                    <XAxis
                       type="number"
                       tick={{ fill: 'rgba(255,255,255,0.7)' }}
                     />
-                    <YAxis 
+                    <YAxis
                       type="category"
                       dataKey="tag"
                       width={90}
                       tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 11 }}
                     />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(0,0,0,0.8)', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(0,0,0,0.8)',
                         border: '1px solid rgba(255,255,255,0.2)',
                         borderRadius: '8px',
                         color: 'white'
@@ -329,9 +379,9 @@ export default function ProfilePage() {
                     />
                     <Bar dataKey="visits" fill={CHART_COLORS.cyan} radius={[0, 8, 8, 0]}>
                       {sortedTags.slice(0, 15).map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={index % 3 === 0 ? CHART_COLORS.cyan : index % 3 === 1 ? CHART_COLORS.accent : CHART_COLORS.secondary} 
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={index % 3 === 0 ? CHART_COLORS.cyan : index % 3 === 1 ? CHART_COLORS.accent : CHART_COLORS.secondary}
                         />
                       ))}
                     </Bar>
@@ -343,29 +393,29 @@ export default function ProfilePage() {
               <div>
                 <h3 className="text-lg font-semibold text-white mb-4">Average Rating by Tag</h3>
                 <ResponsiveContainer width="100%" height={400}>
-                  <BarChart 
+                  <BarChart
                     data={sortedTags.slice(0, 15).map(t => ({
                       tag: t.tag.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
                       rating: Number((t.average_rating || 0).toFixed(1))
-                    }))} 
+                    }))}
                     layout="vertical"
                     margin={{ top: 20, right: 30, left: 100, bottom: 20 }}
                   >
                     <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                    <XAxis 
+                    <XAxis
                       type="number"
                       domain={[0, 5]}
                       tick={{ fill: 'rgba(255,255,255,0.7)' }}
                     />
-                    <YAxis 
+                    <YAxis
                       type="category"
                       dataKey="tag"
                       width={90}
                       tick={{ fill: 'rgba(255,255,255,0.7)', fontSize: 11 }}
                     />
-                    <Tooltip 
-                      contentStyle={{ 
-                        backgroundColor: 'rgba(0,0,0,0.8)', 
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: 'rgba(0,0,0,0.8)',
                         border: '1px solid rgba(255,255,255,0.2)',
                         borderRadius: '8px',
                         color: 'white'
@@ -373,9 +423,9 @@ export default function ProfilePage() {
                     />
                     <Bar dataKey="rating" fill={CHART_COLORS.yellow} radius={[0, 8, 8, 0]}>
                       {sortedTags.slice(0, 15).map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={index % 2 === 0 ? CHART_COLORS.yellow : CHART_COLORS.primary} 
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={index % 2 === 0 ? CHART_COLORS.yellow : CHART_COLORS.primary}
                         />
                       ))}
                     </Bar>
