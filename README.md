@@ -2,6 +2,8 @@
 
 **Palate** is an AI-powered social dining app designed to eliminate the friction of group restaurant decisions. By combining behavioral analytics with generative AI, Palate acts as an impartial mediator that finds the "culinary centroid" of any group.
 
+🌐 **Live Demo:** [mypalate.tech](https://mypalate.tech)
+
 This project was built for **UofTHacks 2026** and specifically addresses the **Amplitude Technical Challenge** (Self-Improving Products) and the **1Password Challenge** (Passkey/WebAuthn Integration).
 
 ---
@@ -52,6 +54,9 @@ Palate implements a complete **Data → Insights → Action** loop to create a p
 ---
 
 ## 🏃 Getting Started
+
+### Try it Live
+Visit **[mypalate.tech](https://mypalate.tech)** to experience Palate in action!
 
 ### Prerequisites
 -   Node.js (v18+)
